@@ -14,7 +14,6 @@ export const PumpSceneSvg: React.FC<PumpSceneSvgProps> = ({
   const isLive = flowRate > 1
 
   // Dynamic animation speeds based on flow rate
-  const flowSpeed = `${Math.max(0.35, 1.6 - flowRate / 80).toFixed(2)}s`
   const spinSpeed = `${Math.max(0.3, 2.2 - flowRate / 40).toFixed(2)}s`
 
   // Render individual pump unit with centered origin at (cx, 108)
@@ -48,14 +47,13 @@ export const PumpSceneSvg: React.FC<PumpSceneSvgProps> = ({
             />
           ))}
 
-          {/* LED Status Beacon */}
+          {/* LED Status Indicator: Solid Green when Running, Solid Red when Stopped (No blinking) */}
           <circle
-            className={`transition-colors ${
-              isRunning ? 'fill-[var(--on)] animate-pulse-led' : 'fill-[var(--mut)]'
-            }`}
+            className="transition-colors duration-250"
             cx={cx + 11}
             cy={31}
-            r={3}
+            r={3.5}
+            fill={isRunning ? '#10b981' : '#ef4444'}
           />
 
           {/* Motor Label (M1, M2) */}
@@ -111,7 +109,6 @@ export const PumpSceneSvg: React.FC<PumpSceneSvgProps> = ({
       viewBox="0 0 360 150"
       role="img"
       aria-label={`Skema pompa ${stationName}`}
-      style={{ '--fs': flowSpeed } as React.CSSProperties}
     >
       {/* Base Solid Pipe */}
       <line
@@ -131,15 +128,14 @@ export const PumpSceneSvg: React.FC<PumpSceneSvgProps> = ({
         className="stroke-[var(--card)] stroke-[12] opacity-35"
       />
 
-      {/* Animated Water Flow Dashes */}
+      {/* Active Solid Water Flow Inside Pipe (No broken dot dashes) */}
       {isLive && (
         <line
-          x1="-16"
+          x1="0"
           x2="360"
           y1="108"
           y2="108"
-          className="stroke-[var(--water)] stroke-[5] stroke-linecap-round animate-pipe-flow"
-          strokeDasharray="7 9"
+          className="stroke-[var(--water)] stroke-[6] transition-all duration-300"
         />
       )}
 
