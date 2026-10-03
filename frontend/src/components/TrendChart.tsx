@@ -21,6 +21,16 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
     { ratio: 0.0, label: `0.0 ${unit}` },
   ]
 
+  if (!stations || stations.length === 0) {
+    return (
+      <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-8 shadow-xs text-center flex flex-col items-center justify-center text-slate-400">
+        <Activity className="w-8 h-8 text-slate-400 mb-2 animate-pulse" />
+        <p className="font-bold text-sm text-slate-700 m-0">Menunggu Telemetri Stasiun Pompa...</p>
+        <span className="text-xs text-slate-500">Memuat topologi plant dan aliran telemetri dari backend.</span>
+      </section>
+    )
+  }
+
   return (
     <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-5 sm:p-6 shadow-xs transition-all">
       {/* Chart Header */}
@@ -97,15 +107,14 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
               {stations.map((station) => {
                 const historyData =
                   metricMode === 'pressure'
-                    ? station.history.pressure
-                    : station.history.flowRate
+                    ? station.history?.pressure || []
+                    : station.history?.flowRate || []
 
                 if (historyData.length < 2) return null
 
                 const points = historyData.map((val, idx) => {
                   const x = ((idx / (numPoints - 1)) * 900).toFixed(1)
                   const clampedVal = Math.min(Math.max(val, 0), maxVal)
-                  // 195px usable height with 15px padding top/bottom
                   const y = (205 - (clampedVal / maxVal) * 190).toFixed(1)
                   return { x, y }
                 })
@@ -122,7 +131,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
                     <path
                       d={pathD}
                       fill="none"
-                      stroke={station.color}
+                      stroke={station.color || 'var(--amp-teal)'}
                       strokeWidth="3"
                       strokeLinejoin="round"
                       strokeLinecap="round"
@@ -135,7 +144,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
                         cx={lastPoint.x}
                         cy={lastPoint.y}
                         r="4.5"
-                        fill={station.color}
+                        fill={station.color || 'var(--amp-teal)'}
                         stroke="var(--card)"
                         strokeWidth="1.5"
                       />
@@ -163,10 +172,10 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
         {stations.map((station) => {
           const currentVal =
             metricMode === 'pressure'
-              ? `${station.pressure.toFixed(2)} bar`
-              : `${station.flowRate.toFixed(1)} L/min`
+              ? `${(station.pressure || 0).toFixed(2)} bar`
+              : `${(station.flowRate || 0).toFixed(1)} L/min`
 
-          const activeCount = station.motors[0] + station.motors[1]
+          const activeCount = (station.motors?.[0] || 0) + (station.motors?.[1] || 0)
 
           const renderIcon = () => {
             if (station.id.includes('01') || station.name.toLowerCase().includes('basement')) {
@@ -189,7 +198,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-7 h-7 rounded-lg shrink-0 shadow-xs flex items-center justify-center"
-                  style={{ backgroundColor: station.color }}
+                  style={{ backgroundColor: station.color || 'var(--amp-teal)' }}
                 >
                   {renderIcon()}
                 </div>
