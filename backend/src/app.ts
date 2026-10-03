@@ -40,20 +40,59 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  // Allow empty body for application/json (e.g., POST /auth/logout)
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    try {
+      const str = ((body as string) || '').trim();
+      const json = str ? JSON.parse(str) : {};
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   // Security Headers & CORS
   await app.register(fastifyCors, {
-    origin: true,
+    origin: (origin, cb) => {
+      // Allow all origins (reflect requesting origin) for local network & frontend dev servers
+      cb(null, true);
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Cache-Control',
+      'Pragma',
+      'Expires',
+      'Upgrade-Insecure-Requests',
+    ],
+    exposedHeaders: [
+      'Content-Range',
+      'X-Content-Range',
+      'ETag',
+      'Authorization',
+      'Content-Type',
+    ],
+    maxAge: 86400,
+    preflight: true,
+    strictPreflight: false,
   });
 
   await app.register(fastifyHelmet, {
     contentSecurityPolicy: false,
     hsts: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginOpenerPolicy: false,
+    crossOriginEmbedderPolicy: false,
   });
 
   await app.register(fastifyRateLimit, {
-    max: 500,
+    max: 1000,
     timeWindow: '1 minute',
   });
 

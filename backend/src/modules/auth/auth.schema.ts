@@ -6,6 +6,13 @@ export const loginBodySchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const registerBodySchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  full_name: z.string().min(2, 'Full name must be at least 2 characters'),
+  role: z.enum(['ENGINEER', 'OPERATOR', 'VIEWER']).default('OPERATOR'),
+});
+
 export const userProfileSchema = z.object({
   id: z.string().uuid(),
   email: z.string().email(),
