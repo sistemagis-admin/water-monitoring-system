@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import logoAmp from '../assets/logo/amp.png'
 import {
   LayoutDashboard,
   User,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 export interface SidebarProps {
@@ -11,132 +13,158 @@ export interface SidebarProps {
   onProfileClick?: () => void
 }
 
-interface NavItem {
-  id: string
-  type: 'icon' | 'badge'
-  label: string
-  sublabel?: string
-  icon?: React.ReactNode
-  badgeText?: string
-  accentColor?: string
-  bgSoft?: string
-}
-
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab = 'dashboard',
   onSelectTab,
   onProfileClick,
 }) => {
+  const [isExpanded, setIsExpanded] = useState(false)
   const [currentTab, setCurrentTab] = useState(activeTab)
-  const [currentTime, setCurrentTime] = useState('')
-
-  // Real-time digital clock (HH:mm)
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date()
-      const hours = String(now.getHours()).padStart(2, '0')
-      const minutes = String(now.getMinutes()).padStart(2, '0')
-      setCurrentTime(`${hours}:${minutes}`)
-    }
-    updateTime()
-    const timer = setInterval(updateTime, 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   const handleItemClick = (id: string) => {
     setCurrentTab(id)
     onSelectTab?.(id)
   }
 
-  // Navigation Items: Dashboard only as requested
-  const navItems: NavItem[] = [
-    {
-      id: 'dashboard',
-      type: 'icon',
-      label: 'Dashboard Monitoring',
-      icon: <LayoutDashboard className="w-5 h-5 text-white" />,
-      accentColor: 'var(--amp-teal)',
-      bgSoft: 'var(--amp-teal-soft)',
-    },
-  ]
+  const toggleExpand = () => {
+    setIsExpanded((prev) => !prev)
+  }
 
   return (
-    <aside className="w-[68px] sm:w-[72px] py-4 px-1.5 flex flex-col items-center justify-between shrink-0 select-none bg-white border border-slate-200/90 rounded-[32px] shadow-xs my-3 ml-3 h-[calc(100vh-24px)] sticky top-3 z-30 overflow-hidden transition-all">
-      {/* 1. Top Section: Logo AMP & Brand Label */}
-      <div className="flex flex-col items-center gap-1 shrink-0">
-        <div className="w-10 h-10 rounded-2xl p-1 flex items-center justify-center bg-slate-50 border border-slate-100 shadow-2xs hover:scale-105 transition-transform cursor-pointer">
-          <img
-            src={logoAmp}
-            alt="AMP Logo"
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <span className="text-[12px] font-extrabold tracking-wider text-slate-800 uppercase">
-          AMP
-        </span>
-      </div>
+    <aside
+      className={`py-4 flex flex-col justify-between shrink-0 select-none bg-white border border-slate-200/90 rounded-[28px] shadow-xs my-3 ml-3 h-[calc(100vh-24px)] sticky top-3 z-30 overflow-hidden transition-all duration-300 ease-in-out ${
+        isExpanded ? 'w-[230px] sm:w-[245px] px-3.5' : 'w-[68px] sm:w-[72px] px-1.5 items-center'
+      }`}
+    >
+      {/* 1. Top Section: Logo & Toggle Button */}
+      <div className="flex flex-col gap-2.5 shrink-0">
+        <div className={`flex items-center ${isExpanded ? 'justify-between' : 'flex-col gap-1.5'}`}>
+          <div
+            onClick={toggleExpand}
+            className="flex items-center gap-2.5 cursor-pointer group"
+            title={isExpanded ? 'Klik untuk mengecilkan sidebar' : 'Klik untuk membuka sidebar'}
+          >
+            <div className="w-10 h-10 rounded-2xl p-1 flex items-center justify-center bg-slate-50 border border-slate-100 shadow-2xs group-hover:scale-105 group-hover:border-[var(--amp-teal)] transition-all shrink-0">
+              <img
+                src={logoAmp}
+                alt="AMP Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            {isExpanded && (
+              <div className="flex flex-col min-w-0 animate-fade-in">
+                <span className="text-[13px] font-extrabold tracking-wider text-slate-800 uppercase leading-none">
+                  AMP
+                </span>
+                <span className="text-[10px] font-semibold text-slate-400 truncate mt-0.5">
+                  Water Monitoring
+                </span>
+              </div>
+            )}
+          </div>
 
-      {/* 2. Middle Navigation Items Stack (Non-scrollable, perfectly fitted) */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 sm:gap-2 py-1">
-        {navItems.map((item) => {
-          const isActive = currentTab === item.id
-
-          return (
-            <div key={item.id} className="relative group">
+          {/* Toggle Button (Expanded: ChevronLeft, Collapsed: ChevronRight right at the top) */}
+          {isExpanded ? (
+            <button
+              onClick={toggleExpand}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Kecilkan Sidebar"
+              aria-label="Kecilkan Sidebar"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          ) : (
+            <div className="relative group">
               <button
-                onClick={() => handleItemClick(item.id)}
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'text-white shadow-sm scale-105'
-                    : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 active:scale-95'
-                }`}
-                style={{
-                  backgroundColor: isActive
-                    ? item.accentColor || 'var(--amp-teal)'
-                    : undefined,
-                }}
-                aria-label={item.label}
+                onClick={toggleExpand}
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[var(--amp-teal)] hover:bg-slate-100 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                title="Buka Sidebar"
+                aria-label="Buka Sidebar"
               >
-                {item.type === 'icon' ? (
-                  item.icon
-                ) : (
-                  <span className="text-[10px] sm:text-[11px] font-mono font-bold tracking-tight">
-                    {item.badgeText}
-                  </span>
-                )}
+                <ChevronRight className="w-4 h-4" />
               </button>
-
-              {/* Floating Tooltip on Hover */}
+              {/* Tooltip */}
               <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
-                {item.label}
+                Buka Sidebar
                 <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
               </div>
             </div>
-          )
-        })}
-
-        {/* Live Clock Pill Widget */}
-        <div className="mt-1 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200/70 text-[10px] sm:text-[11px] font-mono font-bold text-slate-700 tracking-tight shadow-2xs tabular-nums">
-          {currentTime || '00:00'}
+          )}
         </div>
       </div>
 
-      {/* 3. Bottom Section: Profile / User Avatar Icon */}
-      <div className="flex flex-col items-center shrink-0 pt-1">
+      {/* 2. Top-Aligned Navigation Items (Directly Under Logo & Header) */}
+      <div className="flex-1 flex flex-col gap-2 mt-3 pt-2 border-t border-slate-100">
+        {/* Dashboard Menu Button */}
+        <div className="relative group">
+          <button
+            onClick={() => handleItemClick('dashboard')}
+            className={`w-full rounded-2xl flex items-center transition-all duration-200 cursor-pointer ${
+              currentTab === 'dashboard'
+                ? 'text-white bg-[var(--amp-teal)] shadow-sm'
+                : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
+            } ${
+              isExpanded
+                ? 'px-3 py-2.5 gap-3 font-bold text-xs sm:text-sm'
+                : 'w-10 h-10 sm:w-11 sm:h-11 mx-auto justify-center hover:scale-105 active:scale-95'
+            }`}
+            aria-label="Dashboard Monitoring"
+          >
+            <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+            {isExpanded && (
+              <span className="truncate tracking-tight font-bold">
+                Dashboard
+              </span>
+            )}
+          </button>
+
+          {/* Floating Tooltip on Hover when Collapsed */}
+          {!isExpanded && (
+            <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
+              Dashboard Monitoring
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Bottom Section: Profile Avatar Only */}
+      <div className="flex flex-col gap-2 shrink-0 pt-2 border-t border-slate-100">
+        {/* Profile Card / Button */}
         <div className="relative group">
           <button
             onClick={onProfileClick}
-            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200/90 text-slate-700 border border-slate-200/80 shadow-2xs hover:border-[var(--amp-teal)] transition-all cursor-pointer active:scale-95"
+            className={`w-full rounded-2xl flex items-center bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all duration-200 cursor-pointer active:scale-95 ${
+              isExpanded
+                ? 'p-2 gap-2.5 text-left'
+                : 'w-10 h-10 sm:w-11 sm:h-11 mx-auto justify-center'
+            }`}
             aria-label="Profil Operator"
           >
-            <User className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-slate-700" />
+            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+              <User className="w-4 h-4" />
+            </div>
+
+            {isExpanded && (
+              <div className="flex flex-col min-w-0 flex-1">
+                <span className="text-xs font-bold text-slate-800 truncate">
+                  Operator SCADA
+                </span>
+                <span className="text-[10px] text-[var(--on)] font-semibold truncate flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--on)]" />
+                  Online
+                </span>
+              </div>
+            )}
           </button>
 
-          {/* Tooltip */}
-          <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
-            Profil Operator
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
-          </div>
+          {/* Floating Tooltip when Collapsed */}
+          {!isExpanded && (
+            <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
+              Profil Operator
+              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+            </div>
+          )}
         </div>
       </div>
     </aside>
