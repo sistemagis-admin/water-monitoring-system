@@ -41,7 +41,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
         </div>
 
         {/* Metric Switch Tabs */}
-        <div className="inline-flex bg-[var(--bg)] rounded-xl p-1 border border-[var(--line)] self-start sm:self-auto">
+        <div className="inline-flex bg-[var(--cas)] rounded-xl p-1 border border-[var(--line)] self-start sm:self-auto">
           <button
             onClick={() => setMetricMode('pressure')}
             className={`flex items-center gap-1.5 font-semibold text-xs py-2 px-3.5 rounded-lg cursor-pointer transition-all ${
@@ -83,7 +83,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
 
         {/* SVG Drawing Canvas */}
         <div className="flex-1 flex flex-col">
-          <div className="w-full h-[220px] rounded-xl bg-[var(--bg)]/40 border border-[var(--line)]/60 relative overflow-hidden">
+          <div className="w-full h-[220px] rounded-xl bg-[var(--cas)]/35 border border-[var(--line)]/60 relative overflow-hidden">
             {/* Horizontal Grid lines */}
             <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-3.5 px-0">
               <div className="w-full border-b border-[var(--line)]/50 border-dashed" />
@@ -198,7 +198,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
           return (
             <div
               key={station.id}
-              className="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-[var(--bg)]/50 border border-[var(--line)]/60"
+              className="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-[var(--cas)]/40 border border-[var(--line)]/60"
             >
               <div className="flex items-center gap-2.5">
                 <span
