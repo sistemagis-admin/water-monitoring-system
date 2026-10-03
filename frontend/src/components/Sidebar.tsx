@@ -32,17 +32,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className={`py-4 flex flex-col justify-between shrink-0 select-none bg-white border border-slate-200/90 rounded-[28px] shadow-xs my-3 ml-3 h-[calc(100vh-24px)] sticky top-3 z-30 overflow-hidden transition-all duration-300 ease-in-out ${
+      className={`relative py-4 flex flex-col justify-between shrink-0 select-none bg-white border border-slate-200/90 rounded-[28px] shadow-xs my-3 ml-3 h-[calc(100vh-24px)] sticky top-3 z-30 transition-all duration-300 ease-in-out ${
         isExpanded ? 'w-[230px] sm:w-[245px] px-3.5' : 'w-[68px] sm:w-[72px] px-1.5 items-center'
       }`}
     >
-      {/* 1. Top Section: Logo & Toggle Button */}
-      <div className="flex flex-col gap-2.5 shrink-0">
-        <div className={`flex items-center ${isExpanded ? 'justify-between' : 'flex-col gap-1.5'}`}>
+      {/* Small Chevron Toggle Button on the Right Border Edge */}
+      <button
+        onClick={toggleExpand}
+        className="absolute -right-2.5 top-6 w-5 h-5 rounded-full bg-white border border-slate-300/90 shadow-2xs hover:shadow-xs flex items-center justify-center text-slate-500 hover:text-[var(--amp-teal)] hover:border-[var(--amp-teal)] transition-all cursor-pointer z-40 hover:scale-110 active:scale-95"
+        aria-label={isExpanded ? 'Kecilkan Sidebar' : 'Buka Sidebar'}
+      >
+        {isExpanded ? (
+          <ChevronLeft className="w-3 h-3 text-slate-600" />
+        ) : (
+          <ChevronRight className="w-3 h-3 text-slate-600" />
+        )}
+      </button>
+
+      {/* 1. Top Section: Logo & Brand Label */}
+      <div className="flex flex-col gap-2 shrink-0 w-full">
+        <div className={`flex items-center ${isExpanded ? 'justify-between' : 'flex-col gap-1'}`}>
           <div
             onClick={toggleExpand}
             className="flex items-center gap-2.5 cursor-pointer group"
-            title={isExpanded ? 'Klik untuk mengecilkan sidebar' : 'Klik untuk membuka sidebar'}
           >
             <div className="w-10 h-10 rounded-2xl p-1 flex items-center justify-center bg-slate-50 border border-slate-100 shadow-2xs group-hover:scale-105 group-hover:border-[var(--amp-teal)] transition-all shrink-0">
               <img
@@ -63,40 +75,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          {/* Toggle Button (Expanded: ChevronLeft, Collapsed: ChevronRight right at the top) */}
-          {isExpanded ? (
-            <button
+          {/* Text AMP under logo when collapsed */}
+          {!isExpanded && (
+            <span
               onClick={toggleExpand}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Kecilkan Sidebar"
-              aria-label="Kecilkan Sidebar"
+              className="text-[12px] font-extrabold tracking-wider text-slate-800 uppercase text-center cursor-pointer hover:text-[var(--amp-teal)] transition-colors leading-tight"
             >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          ) : (
-            <div className="relative group">
-              <button
-                onClick={toggleExpand}
-                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-[var(--amp-teal)] hover:bg-slate-100 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
-                title="Buka Sidebar"
-                aria-label="Buka Sidebar"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              {/* Tooltip */}
-              <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
-                Buka Sidebar
-                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
-              </div>
-            </div>
+              AMP
+            </span>
           )}
         </div>
       </div>
 
-      {/* 2. Top-Aligned Navigation Items (Directly Under Logo & Header) */}
-      <div className="flex-1 flex flex-col gap-2 mt-3 pt-2 border-t border-slate-100">
+      {/* 2. Top-Aligned Navigation Items (Directly Under Logo) */}
+      <div className="flex-1 flex flex-col gap-2 mt-3 pt-2 border-t border-slate-100 w-full">
         {/* Dashboard Menu Button */}
-        <div className="relative group">
+        <div className="relative group w-full">
           <button
             onClick={() => handleItemClick('dashboard')}
             className={`w-full rounded-2xl flex items-center transition-all duration-200 cursor-pointer ${
@@ -129,9 +123,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 3. Bottom Section: Profile Avatar Only */}
-      <div className="flex flex-col gap-2 shrink-0 pt-2 border-t border-slate-100">
+      <div className="flex flex-col gap-2 shrink-0 pt-2 border-t border-slate-100 w-full">
         {/* Profile Card / Button */}
-        <div className="relative group">
+        <div className="relative group w-full">
           <button
             onClick={onProfileClick}
             className={`w-full rounded-2xl flex items-center bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all duration-200 cursor-pointer active:scale-95 ${
