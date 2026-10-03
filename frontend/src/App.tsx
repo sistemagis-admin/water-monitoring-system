@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { usePumpSystem } from './hooks/usePumpSystem'
+import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { StatsBar } from './components/StatsBar'
 import { PumpCard } from './components/PumpCard'
@@ -36,8 +37,12 @@ export function App() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--ink)] antialiased transition-colors duration-250 flex flex-col">
-      <main className="w-full flex-1 px-4 sm:px-8 lg:px-10 xl:px-12 py-6 sm:py-8 flex flex-col justify-between">
+    <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--ink)] antialiased transition-colors duration-250 flex">
+      {/* Sleek Capsule Sidebar with AMP Brand Styling */}
+      <Sidebar onQuickAction={() => setIsStopModalOpen(true)} />
+
+      {/* Main Content Area */}
+      <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col justify-between">
         <div>
           {/* Header Bar */}
           <Header
