@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import logoAmp from '../assets/logo/amp.png'
+import type { ApiUser } from '../services/api'
 import {
   LayoutDashboard,
   Layers,
@@ -13,12 +14,14 @@ import {
 
 export interface SidebarProps {
   activeTab?: string
+  currentUser?: ApiUser | null
   onSelectTab?: (tabId: string) => void
   onProfileClick?: () => void
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab = 'dashboard',
+  currentUser,
   onSelectTab,
   onProfileClick,
 }) => {
@@ -164,18 +167,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }`}
             aria-label="Profil Operator"
           >
-            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-              <User className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs shrink-0">
+              {currentUser?.full_name?.charAt(0) || <User className="w-4 h-4" />}
             </div>
 
             {isExpanded && (
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-xs font-bold text-slate-800 truncate">
-                  Operator SCADA
+                  {currentUser?.full_name || 'Operator SCADA'}
                 </span>
-                <span className="text-[10px] text-[var(--on)] font-semibold truncate flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--on)]" />
-                  Online
+                <span className="text-[10px] text-emerald-600 font-semibold truncate flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  {currentUser?.role || 'Online'}
                 </span>
               </div>
             )}
@@ -184,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Floating Tooltip when Collapsed */}
           {!isExpanded && (
             <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
-              Profil Operator
+              {currentUser?.full_name || 'Profil Operator'}
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
             </div>
           )}

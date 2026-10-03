@@ -12,6 +12,9 @@ import { AddPumpModal } from './components/AddPumpModal'
 import { AddSensorModal } from './components/AddSensorModal'
 import { Footer } from './components/Footer'
 import { EmergencyStopModal } from './components/EmergencyStopModal'
+import { LoginPage } from './components/LoginPage'
+import { ProfileModal } from './components/ProfileModal'
+import { Loader2 } from 'lucide-react'
 
 export function App() {
   const {
@@ -21,10 +24,14 @@ export function App() {
     sensors,
     alarms,
     stats,
+    isLoading,
+    isAuthenticated,
     isBackendOnline,
     isLiveSSE,
     siteInfo,
     currentUser,
+    login,
+    logout,
     reconnectBackend,
     addPump,
     addSensor,
@@ -44,6 +51,7 @@ export function App() {
   const [isStopModalOpen, setIsStopModalOpen] = useState(false)
   const [isAddPumpOpen, setIsAddPumpOpen] = useState(false)
   const [isAddSensorOpen, setIsAddSensorOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   // Sync theme with HTML data-theme attribute
   useEffect(() => {
@@ -59,13 +67,36 @@ export function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
   }
 
+  // If not authenticated, render Login Page
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} isBackendOnline={isBackendOnline} />
+  }
+
+  // Loading Screen while verifying session
+  if (isLoading && rooms.length === 0) {
+    return (
+      <div className="min-h-screen w-full bg-slate-900 flex flex-col items-center justify-center text-white select-none">
+        <div className="w-12 h-12 rounded-2xl bg-[var(--amp-teal)] text-white flex items-center justify-center mb-4 shadow-lg animate-bounce">
+          <Loader2 className="w-6 h-6 animate-spin" />
+        </div>
+        <h3 className="font-heading font-extrabold text-xl mb-1">
+          Memuat Sistem SCADA...
+        </h3>
+        <p className="text-xs text-slate-400">
+          Menghubungkan ke Fastify Backend &amp; Stream Telemetri Real-time
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--ink)] antialiased transition-colors duration-250 flex">
       {/* Sleek Capsule Sidebar with AMP Brand Styling */}
       <Sidebar
         activeTab={activeTab}
+        currentUser={currentUser}
         onSelectTab={setActiveTab}
-        onProfileClick={() => setIsStopModalOpen(true)}
+        onProfileClick={() => setIsProfileOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -162,6 +193,17 @@ export function App() {
         onAddSensor={addSensor}
         rooms={rooms}
         gateways={gateways}
+      />
+
+      {/* Profile & Logout Modal */}
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        currentUser={currentUser}
+        onLogout={() => {
+          setIsProfileOpen(false)
+          logout()
+        }}
       />
 
       {/* Safety Emergency Stop Confirmation Modal */}
