@@ -4,7 +4,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  Mail,
+  User,
   Lock,
   LogIn,
 } from 'lucide-react'
@@ -15,7 +15,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,8 +33,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Silakan masukkan email dan kata sandi Anda.')
+    if (!username.trim() || !password.trim()) {
+      setErrorMessage('Silakan masukkan username dan kata sandi Anda.')
       return
     }
 
@@ -42,11 +42,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setErrorMessage(null)
 
     try {
-      const result = await onLogin({ email: email.trim(), password })
+      const result = await onLogin({ email: username.trim(), password })
       if (!result.success) {
         setErrorMessage(
           result.error ||
-          'Email atau kata sandi salah. Silakan coba kembali.'
+          'Username atau kata sandi tidak valid. Silakan coba kembali.'
         )
       }
     } catch (err: any) {
@@ -108,7 +108,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 Masuk ke Sistem
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
-                Silakan masukkan email dan kata sandi akun Anda
+                Silakan masukkan username dan kata sandi akun Anda
               </p>
             </div>
 
@@ -122,19 +122,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Field 1: Email */}
+              {/* Field 1: Username */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                  Email
+                  Username
                 </label>
                 <div className="flex items-center px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                  <Mail className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
+                  <User className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@ascon.co.id"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Masukkan username"
                     className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
