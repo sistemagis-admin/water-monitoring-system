@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  swpm-postgres:
+    image: postgres:16-alpine
+    container_name: swpm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: swpm_user
+      POSTGRES_PASSWORD: swpm_password
+      POSTGRES_DB: swpm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U swpm_user -d swpm_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  swpm-mqtt:
+    image: eclipse-mosquitto:2.0
+    container_name: swpm-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./infra/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+  mosquitto_log:
