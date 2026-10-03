@@ -37,10 +37,10 @@ export const PumpCard: React.FC<PumpCardProps> = ({
           </div>
 
           <span
-            className={`text-xs font-bold px-2.5 py-1 rounded-full transition-colors ${
+            className={`text-xs font-extrabold px-3 py-1 rounded-full text-white shadow-xs transition-all duration-300 tracking-tight ${
               activeMotorCount > 0
-                ? 'bg-[color-mix(in_srgb,var(--on)_18%,transparent)] text-[var(--on)]'
-                : 'bg-[var(--cas)] text-[var(--mut)]'
+                ? 'bg-gradient-to-r from-[#00829B] to-[#10b981]'
+                : 'bg-gradient-to-r from-slate-400 to-slate-500'
             }`}
           >
             {activeMotorCount > 0 ? `${activeMotorCount} motor jalan` : 'Mati'}
