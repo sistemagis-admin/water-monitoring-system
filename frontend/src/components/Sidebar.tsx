@@ -36,18 +36,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isExpanded ? 'w-[230px] sm:w-[245px] px-3.5' : 'w-[68px] sm:w-[72px] px-1.5 items-center'
       }`}
     >
-      {/* Small Chevron Toggle Button on the Right Border Edge */}
-      <button
-        onClick={toggleExpand}
-        className="absolute -right-2.5 top-6 w-5 h-5 rounded-full bg-white border border-slate-300/90 shadow-2xs hover:shadow-xs flex items-center justify-center text-slate-500 hover:text-[var(--amp-teal)] hover:border-[var(--amp-teal)] transition-all cursor-pointer z-40 hover:scale-110 active:scale-95"
-        aria-label={isExpanded ? 'Kecilkan Sidebar' : 'Buka Sidebar'}
-      >
-        {isExpanded ? (
-          <ChevronLeft className="w-3 h-3 text-slate-600" />
-        ) : (
+      {/* Small Chevron Toggle Button on the Right Border Edge (Only when collapsed) */}
+      {!isExpanded && (
+        <button
+          onClick={toggleExpand}
+          className="absolute -right-2.5 top-6 w-5 h-5 rounded-full bg-white border border-slate-300/90 shadow-2xs hover:shadow-xs flex items-center justify-center text-slate-500 hover:text-[var(--amp-teal)] hover:border-[var(--amp-teal)] transition-all cursor-pointer z-40 hover:scale-110 active:scale-95"
+          aria-label="Buka Sidebar"
+          title="Buka Sidebar"
+        >
           <ChevronRight className="w-3 h-3 text-slate-600" />
-        )}
-      </button>
+        </button>
+      )}
 
       {/* 1. Top Section: Logo & Brand Label */}
       <div className="flex flex-col gap-2 shrink-0 w-full">
@@ -74,6 +73,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
           </div>
+
+          {/* Toggle Chevron Inside Header (When expanded) */}
+          {isExpanded && (
+            <button
+              onClick={toggleExpand}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Kecilkan Sidebar"
+              aria-label="Kecilkan Sidebar"
+            >
+              <ChevronLeft className="w-4 h-4 text-slate-600" />
+            </button>
+          )}
 
           {/* Text AMP under logo when collapsed */}
           {!isExpanded && (
