@@ -4,7 +4,7 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
-  User,
+  Mail,
   Lock,
   LogIn,
 } from 'lucide-react'
@@ -15,7 +15,7 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -33,8 +33,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password.trim()) {
-      setErrorMessage('Silakan masukkan username dan kata sandi Anda.')
+    const inputEmail = email.trim()
+    const inputPass = password.trim()
+
+    if (!inputEmail || !inputPass) {
+      setErrorMessage('Silakan masukkan email dan kata sandi Anda.')
       return
     }
 
@@ -42,12 +45,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setErrorMessage(null)
 
     try {
-      const result = await onLogin({ email: username.trim(), password })
+      const result = await onLogin({ email: inputEmail, password: inputPass })
       if (!result.success) {
-        setErrorMessage(
-          result.error ||
-          'Username atau kata sandi tidak valid. Silakan coba kembali.'
-        )
+        let errText = result.error || 'Email atau kata sandi tidak sesuai. Silakan coba kembali.'
+        if (errText.includes('AUTH_INVALID_CREDENTIAL') || errText.includes('Invalid email or password')) {
+          errText = 'Email atau kata sandi tidak terdaftar/salah. Gunakan akun terdaftar di sistem (misal: admin@ascon.co.id / Admin@123).'
+        } else if (errText.includes('Invalid email address') || errText.includes('invalid_string')) {
+          errText = 'Format email tidak valid. Pastikan format email benar (contoh: admin@ascon.co.id).'
+        }
+        setErrorMessage(errText)
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Gagal terhubung ke server backend (192.168.100.6:3000).')
@@ -108,7 +114,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 Masuk ke Sistem
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
-                Silakan masukkan username dan kata sandi akun Anda
+                Silakan masukkan email dan kata sandi akun Anda
               </p>
             </div>
 
@@ -122,19 +128,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Field 1: Username */}
+              {/* Field 1: Email */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                  Username
+                  Email
                 </label>
                 <div className="flex items-center px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-                  <User className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
+                  <Mail className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Masukkan username"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="nama@ascon.co.id"
                     className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
