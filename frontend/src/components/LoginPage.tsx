@@ -1,17 +1,17 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import logoAmp from '../assets/logo/amp.png'
 import {
-  Lock,
-  Mail,
   Eye,
   EyeOff,
-  ShieldCheck,
-  Activity,
-  Waves,
-  Cpu,
-  ArrowRight,
+  Check,
   AlertCircle,
-  CheckCircle2,
+  Wifi,
+  WifiOff,
+  Droplets,
+  Globe,
+  Crown,
+  UserCheck,
+  Wrench,
 } from 'lucide-react'
 
 interface LoginPageProps {
@@ -22,20 +22,40 @@ interface LoginPageProps {
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline = true }) => {
   const [email, setEmail] = useState('admin@ascon.co.id')
   const [password, setPassword] = useState('Admin@123')
+  const [fullName, setFullName] = useState('Super Admin Ascon')
+  const [username, setUsername] = useState('admin_ascon')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
 
-  const handleQuickSelect = (quickEmail: string, quickPass: string) => {
+  // Strictly lock body scroll when login page is active
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = 'unset'
+      document.documentElement.style.overflow = 'unset'
+    }
+  }, [])
+
+  const handleQuickSelect = (
+    quickEmail: string,
+    quickPass: string,
+    quickName: string,
+    quickUser: string
+  ) => {
     setEmail(quickEmail)
     setPassword(quickPass)
+    setFullName(quickName)
+    setUsername(quickUser)
     setErrorMessage(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Silakan masukkan email dan password.')
+      setErrorMessage('Silakan lengkapi email dan kata sandi.')
       return
     }
 
@@ -45,262 +65,366 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
     try {
       const result = await onLogin({ email: email.trim(), password })
       if (!result.success) {
-        setErrorMessage(result.error || 'Email atau password tidak sesuai.')
+        setErrorMessage(result.error || 'Email atau kata sandi tidak valid.')
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal terhubung ke server autentikasi.')
+      setErrorMessage(err.message || 'Gagal menghubungi server autentikasi.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-900 text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none">
-      <div className="w-full max-w-5xl bg-slate-800 border border-slate-700/80 rounded-[32px] shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
-        {/* Left Col: Brand Presentation & System Highlights */}
-        <div className="lg:col-span-6 bg-slate-950 p-8 sm:p-10 lg:p-12 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-slate-800">
-          <div>
-            {/* Brand Logo & Pill */}
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-2xl p-1.5 bg-slate-900 border border-slate-700 shadow-md flex items-center justify-center">
-                <img src={logoAmp} alt="AMP Logo" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <span className="text-xs font-extrabold tracking-widest text-[var(--amp-teal)] uppercase">
-                  PT Ascon Multi Pratama
-                </span>
-                <h2 className="text-lg font-extrabold text-white leading-tight">
-                  SWPMS Enterprise
-                </h2>
-              </div>
-            </div>
+    <div className="h-screen max-h-screen w-screen overflow-hidden bg-white sm:bg-slate-50 flex items-center justify-center p-3 sm:p-4 lg:p-6 select-none">
+      {/* Main Floating Rounded Card */}
+      <div className="w-full max-w-[1020px] max-h-[96vh] sm:max-h-[92vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
+        
+        {/* ======================================================== */}
+        {/* LEFT COLUMN: Deep Blue Atmospheric Panel (Exact Match) */}
+        {/* ======================================================== */}
+        <div className="lg:col-span-6 bg-gradient-to-b from-[#1e40af] via-[#2563eb] to-[#3b82f6] p-6 sm:p-8 lg:p-9 flex flex-col justify-between text-white relative overflow-hidden">
+          
+          {/* Subtle Glow Lighting Effect */}
+          <div className="absolute -top-24 -left-24 w-80 h-80 bg-sky-300/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-blue-900/40 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Main Headline */}
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight mb-4">
-              Smart Water Pump <br className="hidden sm:inline" />
-              Monitoring System
-            </h1>
-            <p className="text-sm text-slate-400 leading-relaxed mb-8">
-              Platform SCADA IoT industri untuk pemantauan telemetri pompa, visualisasi debit &amp; tekanan real-time, serta sistem kendali keselamatan otomatis.
-            </p>
-
-            {/* Feature Highlights */}
-            <div className="space-y-3.5">
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90">
-                <div className="w-8 h-8 rounded-xl bg-[var(--amp-teal)] text-white flex items-center justify-center shrink-0">
-                  <Waves className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Telemetri Sub-detik Real-time</h4>
-                  <p className="text-[11px] text-slate-400">Streaming SSE &amp; Ingestion broker MQTT QoS 1</p>
-                </div>
+          {/* Top: Logo & Brand + Backend Status Badge */}
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-xs">
+                <img src={logoAmp} alt="Logo" className="w-full h-full object-contain filter brightness-0 invert" />
               </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90">
-                <div className="w-8 h-8 rounded-xl bg-[var(--amp-magenta)] text-white flex items-center justify-center shrink-0">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Rule Engine &amp; Alarm Abnormal</h4>
-                  <p className="text-[11px] text-slate-400">Deteksi otomatis overheat, kavitasi &amp; dry-run</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90">
-                <div className="w-8 h-8 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0">
-                  <Cpu className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Kendali Jarak Jauh Terverifikasi</h4>
-                  <p className="text-[11px] text-slate-400">Perintah SCADA Start/Stop &amp; E-STOP terenkripsi</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Backend Status Pill */}
-          <div className="mt-8 pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${
-                  isBackendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                }`}
-              />
-              <span className="font-semibold text-slate-300">
-                {isBackendOnline ? 'Fastify Server Online' : 'Connecting to Server...'}
+              <span className="font-extrabold text-sm tracking-wide text-white">
+                amp.swpms
               </span>
             </div>
-            <span className="font-mono text-[11px] text-slate-500">v1.0.0 (WTP Plant)</span>
-          </div>
-        </div>
 
-        {/* Right Col: Login Form */}
-        <div className="lg:col-span-6 bg-slate-800 p-8 sm:p-10 lg:p-12 flex flex-col justify-between">
-          <div>
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-700/60 text-slate-300 text-xs font-bold mb-2">
-                <ShieldCheck className="w-3.5 h-3.5 text-[var(--amp-teal)]" />
-                <span>Autentikasi SCADA Operator</span>
+            {/* Backend Online Status Pill */}
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/20 backdrop-blur-md border border-white/15 text-[10px] font-semibold text-white">
+              {isBackendOnline ? (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <Wifi className="w-3 h-3 text-emerald-300" />
+                  <span className="hidden sm:inline">Online</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  <WifiOff className="w-3 h-3 text-amber-300" />
+                  <span className="hidden sm:inline">Offline</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mid/Lower: Badge, Headline & Subtitle */}
+          <div className="my-4 lg:my-2 relative z-10">
+            {/* Pill Badge with Built-in Lucide Icon */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-[11px] font-semibold mb-3 shadow-2xs">
+              <span>Water Monitoring SCADA</span>
+              <Droplets className="w-3.5 h-3.5 text-sky-200" />
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.15] mb-2.5">
+              Start your Journey
+            </h1>
+            <p className="text-xs sm:text-sm text-blue-100/90 font-medium leading-relaxed max-w-sm">
+              Follow these simple steps to access the smart industrial water pump monitoring and control platform.
+            </p>
+          </div>
+
+          {/* Bottom 3 Step Cards (Exact match from screenshot) */}
+          <div className="grid grid-cols-3 gap-2 relative z-10 pt-2">
+            {/* Card 1: Active (Solid White) */}
+            <div
+              onClick={() => setActiveStep(1)}
+              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
+                activeStep === 1
+                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
+                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  activeStep === 1 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
+                }`}
+              >
+                1
               </div>
-              <h2 className="text-xl sm:text-2xl font-extrabold text-white">
-                Masuk ke Akun Anda
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Masukkan email dan kata sandi yang telah terdaftar pada sistem.
+              <p
+                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
+                  activeStep === 1 ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Masuk ke akun SCADA
               </p>
             </div>
 
-            {/* Error Message Alert */}
+            {/* Card 2: Step 2 (Translucent Glass) */}
+            <div
+              onClick={() => setActiveStep(2)}
+              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
+                activeStep === 2
+                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
+                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  activeStep === 2 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
+                }`}
+              >
+                2
+              </div>
+              <p
+                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
+                  activeStep === 2 ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Pilih stasiun &amp; pompa
+              </p>
+            </div>
+
+            {/* Card 3: Step 3 (Translucent Glass) */}
+            <div
+              onClick={() => setActiveStep(3)}
+              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
+                activeStep === 3
+                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
+                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                  activeStep === 3 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
+                }`}
+              >
+                3
+              </div>
+              <p
+                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
+                  activeStep === 3 ? 'text-slate-900' : 'text-white'
+                }`}
+              >
+                Pantau telemetri live
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* RIGHT COLUMN: Clean White Form (Exact Match) */}
+        {/* ======================================================== */}
+        <div className="lg:col-span-6 bg-white p-6 sm:p-8 lg:p-9 flex flex-col justify-between overflow-y-auto">
+          <div className="max-w-md mx-auto w-full">
+            {/* Header Title */}
+            <div className="text-center mb-4">
+              <h2 className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight">
+                Join Us
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Akses sistem kendali &amp; telemetri SCADA WTP Plant
+              </p>
+            </div>
+
+            {/* Error Notification Alert */}
             {errorMessage && (
-              <div className="mb-5 p-3.5 rounded-2xl bg-red-950/80 border border-red-800/80 text-red-200 text-xs flex items-start gap-2.5 animate-fade-in">
-                <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                <span className="font-semibold leading-relaxed">{errorMessage}</span>
+              <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
+              {/* Field 1: Phone / Email Number */}
               <div>
-                <label className="block font-bold text-slate-300 mb-1.5">
-                  Alamat Email *
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Email / Nomor Akses
                 </label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Mail className="w-4 h-4" />
+                <div className="flex items-center px-3 py-2 sm:py-2.5 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                  <div className="flex items-center gap-1.5 pr-2 border-r border-slate-300 mr-2 shrink-0 text-xs font-semibold text-slate-700">
+                    <Globe className="w-3.5 h-3.5 text-slate-500" />
+                    <span>ID +62</span>
                   </div>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@ascon.co.id"
-                    className="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 font-medium focus:bg-slate-950 focus:border-[var(--amp-teal)] focus:ring-1 focus:ring-[var(--amp-teal)] outline-hidden transition-all text-xs sm:text-sm"
+                    placeholder="admin@ascon.co.id"
+                    className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1.5">
-                  Kata Sandi *
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Lock className="w-4 h-4" />
+              {/* Field 2 & 3: Full Name & Username (2 Columns, exact match) */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Nama Lengkap
+                  </label>
+                  <div className="flex items-center px-3 py-2 sm:py-2.5 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <input
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Juliette Karapetyan"
+                      className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
+                    />
+                    <span className="text-slate-400 font-light ml-0.5 text-xs animate-pulse">|</span>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Username
+                  </label>
+                  <div className="flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="julietux"
+                      className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
+                    />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Field 4: Password */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Password
+                </label>
+                <div className="flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-11 py-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 font-medium focus:bg-slate-950 focus:border-[var(--amp-teal)] focus:ring-1 focus:ring-[var(--amp-teal)] outline-hidden transition-all text-xs sm:text-sm font-mono"
+                    placeholder="••••••••••••••••"
+                    className="w-full bg-transparent text-xs sm:text-[13px] font-mono font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                    className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer ml-1 shrink-0"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
                 </div>
+                <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">
+                  At least 8 characters, letters, numbers, and symbols.
+                </p>
               </div>
 
-              {/* Submit Button */}
+              {/* Primary Blue Button (Continue) */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 py-3 px-4 rounded-xl bg-[var(--amp-teal)] hover:bg-[#007085] active:scale-98 text-white font-extrabold text-sm transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 sm:py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 mt-1 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Memverifikasi Akun...</span>
-                  </>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <>
-                    <span>Masuk ke SCADA System</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
+                  <span>Continue</span>
                 )}
               </button>
             </form>
 
-            {/* Quick Demo Credentials */}
-            <div className="mt-6 pt-5 border-t border-slate-700/60">
-              <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
-                Akun Demo &amp; Role Sistem:
+            {/* Already have account line */}
+            <div className="text-center mt-2">
+              <span className="text-[11px] text-slate-500 font-medium">
+                Pilih akun instan?{' '}
+                <button
+                  type="button"
+                  onClick={() => handleQuickSelect('admin@ascon.co.id', 'Admin@123', 'Super Admin Ascon', 'admin')}
+                  className="font-bold text-[#2563eb] hover:underline cursor-pointer"
+                >
+                  Admin Auto-fill
+                </button>
               </span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickSelect('admin@ascon.co.id', 'Admin@123')}
-                  className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                    email === 'admin@ascon.co.id'
-                      ? 'bg-slate-900 border-[var(--amp-teal)] text-white'
-                      : 'bg-slate-900/60 border-slate-700/80 text-slate-300 hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">Super Admin</span>
-                    {email === 'admin@ascon.co.id' && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--amp-teal)]" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block truncate">admin@ascon.co.id</span>
-                </button>
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123')}
-                  className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                    email === 'operator@ascon.co.id'
-                      ? 'bg-slate-900 border-[var(--amp-teal)] text-white'
-                      : 'bg-slate-900/60 border-slate-700/80 text-slate-300 hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">Operator SCADA</span>
-                    {email === 'operator@ascon.co.id' && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--amp-teal)]" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block truncate">operator@ascon.co.id</span>
-                </button>
+            {/* Divider 'Or' */}
+            <div className="flex items-center my-2.5">
+              <div className="flex-1 border-t border-slate-200" />
+              <span className="px-2.5 text-[10px] text-slate-400 font-medium">Or</span>
+              <div className="flex-1 border-t border-slate-200" />
+            </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleQuickSelect('engineer@ascon.co.id', 'Engineer@123')}
-                  className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                    email === 'engineer@ascon.co.id'
-                      ? 'bg-slate-900 border-[var(--amp-teal)] text-white'
-                      : 'bg-slate-900/60 border-slate-700/80 text-slate-300 hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">Field Engineer</span>
-                    {email === 'engineer@ascon.co.id' && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--amp-teal)]" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block truncate">engineer@ascon.co.id</span>
-                </button>
+            {/* Google / Quick SSO Button (Exact match from screenshot) */}
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123', 'Plant Operator SCADA', 'operator_wtp')}
+              className="w-full py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 active:scale-98"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 10.04 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Sign in with Google (Demo Operator)</span>
+            </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleQuickSelect('viewer@ascon.co.id', 'Viewer@123')}
-                  className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
-                    email === 'viewer@ascon.co.id'
-                      ? 'bg-slate-900 border-[var(--amp-teal)] text-white'
-                      : 'bg-slate-900/60 border-slate-700/80 text-slate-300 hover:bg-slate-900'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs">Auditor / Viewer</span>
-                    {email === 'viewer@ascon.co.id' && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--amp-teal)]" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block truncate">viewer@ascon.co.id</span>
-                </button>
-              </div>
+            {/* Quick Role Select Chips for 1-Click Login (Clean Lucide Icons) */}
+            <div className="flex flex-wrap gap-1.5 mt-2 justify-center">
+              <button
+                type="button"
+                onClick={() => handleQuickSelect('admin@ascon.co.id', 'Admin@123', 'Super Admin Ascon', 'superadmin')}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
+              >
+                <Crown className="w-2.5 h-2.5 text-purple-600" />
+                <span>Super Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123', 'Plant Operator SCADA', 'operator_wtp')}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
+              >
+                <UserCheck className="w-2.5 h-2.5 text-emerald-600" />
+                <span>Operator</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickSelect('engineer@ascon.co.id', 'Engineer@123', 'Field SCADA Engineer', 'eng_scada')}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
+              >
+                <Wrench className="w-2.5 h-2.5 text-blue-600" />
+                <span>Engineer</span>
+              </button>
             </div>
           </div>
 
-          {/* Footer Note */}
-          <div className="mt-6 text-center text-[11px] text-slate-500">
-            &copy; 2026 PT Ascon Multi Pratama · All rights reserved.
+          {/* Legal Footer Note (Exact match from screenshot) */}
+          <div className="text-center mt-3 pt-2">
+            <p className="text-[9px] text-slate-400 leading-normal max-w-sm mx-auto">
+              By signing up I confirm that I carefully have read and agree to the Ninth{' '}
+              <a href="#terms" className="text-[#2563eb] hover:underline font-semibold">
+                Privacy Policy
+              </a>{' '}
+              and{' '}
+              <a href="#terms" className="text-[#2563eb] hover:underline font-semibold">
+                Terms of Service
+              </a>
+              .
+            </p>
           </div>
         </div>
       </div>
