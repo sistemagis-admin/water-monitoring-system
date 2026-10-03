@@ -39,7 +39,7 @@ export function App() {
   return (
     <div className="min-h-screen w-full bg-[var(--bg)] text-[var(--ink)] antialiased transition-colors duration-250 flex">
       {/* Sleek Capsule Sidebar with AMP Brand Styling */}
-      <Sidebar onQuickAction={() => setIsStopModalOpen(true)} />
+      <Sidebar onProfileClick={() => setIsStopModalOpen(true)} />
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col justify-between">
