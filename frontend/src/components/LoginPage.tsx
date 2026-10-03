@@ -27,7 +27,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1)
 
   // Strictly lock body scroll when login page is active
   useEffect(() => {
@@ -80,9 +79,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
       <div className="w-full max-w-[1020px] max-h-[96vh] sm:max-h-[92vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
         
         {/* ======================================================== */}
-        {/* LEFT COLUMN: Deep Blue Atmospheric Panel (Exact Match) */}
+        {/* LEFT COLUMN: Deep Blue Atmospheric Panel */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 bg-gradient-to-b from-[#1e40af] via-[#2563eb] to-[#3b82f6] p-6 sm:p-8 lg:p-9 flex flex-col justify-between text-white relative overflow-hidden">
+        <div className="lg:col-span-6 bg-gradient-to-b from-[#1e40af] via-[#2563eb] to-[#3b82f6] p-7 sm:p-10 lg:p-11 flex flex-col justify-between text-white relative overflow-hidden">
           
           {/* Subtle Glow Lighting Effect */}
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-sky-300/20 rounded-full blur-3xl pointer-events-none" />
@@ -117,104 +116,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
             </div>
           </div>
 
-          {/* Mid/Lower: Badge, Headline & Subtitle */}
-          <div className="my-4 lg:my-2 relative z-10">
-            {/* Pill Badge with Built-in Lucide Icon */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-[11px] font-semibold mb-3 shadow-2xs">
+          {/* Main Content Area (Badge, Headline & Subtitle) */}
+          <div className="my-auto py-8 relative z-10">
+            {/* Pill Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-semibold mb-4 shadow-2xs">
               <span>Water Monitoring SCADA</span>
               <Droplets className="w-3.5 h-3.5 text-sky-200" />
             </div>
 
             {/* Headline */}
-            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.15] mb-2.5">
+            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white tracking-tight leading-[1.12] mb-3.5">
               Start your Journey
             </h1>
-            <p className="text-xs sm:text-sm text-blue-100/90 font-medium leading-relaxed max-w-sm">
+            <p className="text-sm sm:text-base text-blue-100/90 font-medium leading-relaxed max-w-md">
               Follow these simple steps to access the smart industrial water pump monitoring and control platform.
             </p>
           </div>
 
-          {/* Bottom 3 Step Cards (Exact match from screenshot) */}
-          <div className="grid grid-cols-3 gap-2 relative z-10 pt-2">
-            {/* Card 1: Active (Solid White) */}
-            <div
-              onClick={() => setActiveStep(1)}
-              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
-                activeStep === 1
-                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
-                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  activeStep === 1 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
-                }`}
-              >
-                1
-              </div>
-              <p
-                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
-                  activeStep === 1 ? 'text-slate-900' : 'text-white'
-                }`}
-              >
-                Masuk ke akun SCADA
-              </p>
-            </div>
-
-            {/* Card 2: Step 2 (Translucent Glass) */}
-            <div
-              onClick={() => setActiveStep(2)}
-              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
-                activeStep === 2
-                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
-                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  activeStep === 2 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
-                }`}
-              >
-                2
-              </div>
-              <p
-                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
-                  activeStep === 2 ? 'text-slate-900' : 'text-white'
-                }`}
-              >
-                Pilih stasiun &amp; pompa
-              </p>
-            </div>
-
-            {/* Card 3: Step 3 (Translucent Glass) */}
-            <div
-              onClick={() => setActiveStep(3)}
-              className={`p-3 rounded-2xl transition-all cursor-pointer flex flex-col justify-between min-h-[90px] ${
-                activeStep === 3
-                  ? 'bg-white text-slate-900 shadow-md scale-[1.02]'
-                  : 'bg-white/15 backdrop-blur-md border border-white/25 text-white hover:bg-white/25'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  activeStep === 3 ? 'bg-[#2563eb] text-white' : 'bg-white/20 text-white'
-                }`}
-              >
-                3
-              </div>
-              <p
-                className={`text-[10px] sm:text-[11px] font-extrabold leading-tight mt-2 ${
-                  activeStep === 3 ? 'text-slate-900' : 'text-white'
-                }`}
-              >
-                Pantau telemetri live
-              </p>
-            </div>
+          {/* Footer note inside left panel */}
+          <div className="relative z-10 text-[11px] text-blue-150/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
+            <span>WTP Plant SCADA System</span>
+            <span className="opacity-80">PT Ascon Multi Pratama</span>
           </div>
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT COLUMN: Clean White Form (Exact Match) */}
+        {/* RIGHT COLUMN: Clean White Form */}
         {/* ======================================================== */}
         <div className="lg:col-span-6 bg-white p-6 sm:p-8 lg:p-9 flex flex-col justify-between overflow-y-auto">
           <div className="max-w-md mx-auto w-full">
@@ -356,7 +283,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
               <div className="flex-1 border-t border-slate-200" />
             </div>
 
-            {/* Google / Quick SSO Button (Exact match from screenshot) */}
+            {/* Google / Quick SSO Button */}
             <button
               type="button"
               onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123', 'Plant Operator SCADA', 'operator_wtp')}
@@ -412,7 +339,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
             </div>
           </div>
 
-          {/* Legal Footer Note (Exact match from screenshot) */}
+          {/* Legal Footer Note */}
           <div className="text-center mt-3 pt-2">
             <p className="text-[9px] text-slate-400 leading-normal max-w-sm mx-auto">
               By signing up I confirm that I carefully have read and agree to the Ninth{' '}
