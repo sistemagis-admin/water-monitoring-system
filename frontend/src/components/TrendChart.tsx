@@ -99,23 +99,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
               preserveAspectRatio="none"
               aria-label="Grafik tren sensor"
             >
-              <defs>
-                {stations.map((s) => (
-                  <linearGradient
-                    key={`grad-${s.id}`}
-                    id={`grad-${s.id}`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
-                    <stop offset="100%" stopColor={s.color} stopOpacity="0.0" />
-                  </linearGradient>
-                ))}
-              </defs>
-
-              {/* Draw area and stroke paths for each station */}
+              {/* Draw stroke paths for each station */}
               {stations.map((station) => {
                 const historyData =
                   metricMode === 'pressure'
@@ -136,26 +120,22 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
                   (acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`,
                   ''
                 )
-                const areaD = `${pathD} L 900 220 L 0 220 Z`
                 const lastPoint = points[points.length - 1]
 
                 return (
                   <g key={station.id}>
-                    {/* Area glow under line */}
-                    <path d={areaD} fill={`url(#grad-${station.id})`} />
-
                     {/* Main Telemetry Line */}
                     <path
                       d={pathD}
                       fill="none"
                       stroke={station.color}
-                      strokeWidth="2.8"
+                      strokeWidth="3"
                       strokeLinejoin="round"
                       strokeLinecap="round"
                       style={{ vectorEffect: 'non-scaling-stroke' }}
                     />
 
-                    {/* Active Endpoint Pulsing Beacon */}
+                    {/* Active Endpoint Beacon */}
                     {lastPoint && (
                       <circle
                         cx={lastPoint.x}

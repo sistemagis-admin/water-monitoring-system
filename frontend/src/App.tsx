@@ -5,15 +5,20 @@ import { Header } from './components/Header'
 import { StatsBar } from './components/StatsBar'
 import { PumpCard } from './components/PumpCard'
 import { TrendChart } from './components/TrendChart'
+import { AlarmsPanel } from './components/AlarmsPanel'
+import { DeviceHealthTable } from './components/DeviceHealthTable'
 import { Footer } from './components/Footer'
 import { EmergencyStopModal } from './components/EmergencyStopModal'
 
 export function App() {
   const {
     stations,
+    gateways,
+    alarms,
     stats,
     toggleMotor,
     emergencyStop,
+    acknowledgeAlarm,
   } = usePumpSystem()
 
   // Theme state
@@ -51,7 +56,7 @@ export function App() {
             onEmergencyStop={() => setIsStopModalOpen(true)}
           />
 
-          {/* 4 Unified KPI Stat Blocks */}
+          {/* Unified KPI Stat Blocks */}
           <StatsBar stats={stats} />
 
           {/* 3 Pump Station Cards Grid spanning full width */}
@@ -67,7 +72,15 @@ export function App() {
           </section>
 
           {/* Real-time Trend Chart Section spanning full width */}
-          <TrendChart stations={stations} />
+          <div className="mb-6">
+            <TrendChart stations={stations} />
+          </div>
+
+          {/* Alarms & Device Connectivity Panels Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 mb-6">
+            <AlarmsPanel alarms={alarms} onAcknowledge={acknowledgeAlarm} />
+            <DeviceHealthTable gateways={gateways} />
+          </div>
         </div>
 
         {/* Footer */}
@@ -79,7 +92,7 @@ export function App() {
         isOpen={isStopModalOpen}
         onClose={() => setIsStopModalOpen(false)}
         onConfirm={emergencyStop}
-        runningCount={stats.runningMotors}
+        runningCount={stats.runningPumps}
       />
     </div>
   )

@@ -15,11 +15,20 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="flex flex-wrap gap-4 justify-between items-center mb-6 pb-4 border-b border-[var(--line)]">
       <div>
-        <h1 className="font-heading font-extrabold text-3xl sm:text-4xl lg:text-[40px] tracking-tight m-0 mb-1 leading-none text-[var(--ink)]">
-          Monitoring Pump System
+        <div className="flex items-center gap-2 mb-1">
+          <span className="px-2 py-0.5 rounded-md bg-[var(--amp-teal)] text-white text-[11px] font-extrabold uppercase tracking-wide">
+            PT Ascon Multi Pratama
+          </span>
+          <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-extrabold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            SSE Live 1s
+          </span>
+        </div>
+        <h1 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-[34px] tracking-tight m-0 mb-1 leading-none text-slate-900">
+          Smart Water Pump Monitoring System
         </h1>
-        <p className="m-0 text-[var(--mut)] text-sm sm:text-base">
-          Tekanan, debit, dan kontrol 6 motor di tiga lokasi.
+        <p className="m-0 text-slate-500 text-xs sm:text-sm font-medium">
+          Site: <strong>SITE-DEMO (WTP Plant)</strong> · 3 Area/Ruangan · 6 Unit Pompa Industrial
         </p>
       </div>
 

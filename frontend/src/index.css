@@ -6,15 +6,21 @@
   --ink: #0f172a;
   --mut: #64748b;
   --line: #e2e8f0;
-  --water: #0284c7;
+  --water: #00829b;
+  --amp-teal: #00829b;
+  --amp-magenta: #c80058;
+  --amp-purple: #9c7cd4;
+  --amp-teal-soft: #e0f2f7;
+  --amp-magenta-soft: #fce7f0;
+  --amp-purple-soft: #f2edf9;
   --on: #10b981;
   --warn: #f59e0b;
   --pipe: #334155;
   --cas: #f1f5f9;
   --mot: #1e293b;
-  --c1: #0284c7;
-  --c2: #6366f1;
-  --c3: #f59e0b;
+  --c1: #00829b;
+  --c2: #9c7cd4;
+  --c3: #c80058;
 
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color-scheme: light dark;
