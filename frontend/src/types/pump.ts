@@ -80,6 +80,67 @@ export interface DeviceGateway {
   ip: string
 }
 
+export type PumpSubtype =
+  | 'MAIN_PUMP'
+  | 'TRANSFER_PUMP'
+  | 'BOOSTER_PUMP'
+  | 'HEATER_PUMP'
+  | 'AUXILIARY_PUMP'
+
+export type SensorType =
+  | 'PRESSURE_SENSOR'
+  | 'FLOW_METER'
+  | 'LEVEL_SENSOR'
+  | 'DISTANCE_SENSOR'
+  | 'TEMPERATURE_SENSOR'
+  | 'CURRENT_SENSOR'
+  | 'VIBRATION_SENSOR'
+  | 'OTHER'
+
+export interface SensorItem {
+  id: string
+  code: string
+  name: string
+  sensorType: SensorType
+  metricCode: string
+  unit: string
+  targetType: 'AREA' | 'PUMP'
+  targetId: string
+  targetName: string
+  deviceId: string
+  status: 'ACTIVE' | 'CALIBRATING' | 'FAULT' | 'OFFLINE'
+  currentValue: number
+  minThreshold?: number
+  maxThreshold?: number
+  lastCalibration?: string
+}
+
+export interface AddPumpInput {
+  code: string
+  name: string
+  subtype: PumpSubtype
+  areaId: string
+  deviceId: string
+  motorIndex: 0 | 1
+  ratedPowerKw: number
+  ratedFlowM3h: number
+  ratedPressureBar: number
+  controlEnabled: boolean
+}
+
+export interface AddSensorInput {
+  code: string
+  name: string
+  sensorType: SensorType
+  metricCode: string
+  unit: string
+  targetType: 'AREA' | 'PUMP'
+  targetId: string
+  deviceId: string
+  minThreshold?: number
+  maxThreshold?: number
+}
+
 export interface SimulationStats {
   totalSites: number
   totalAreas: number
@@ -89,6 +150,7 @@ export interface SimulationStats {
   runningPumps: number
   stoppedPumps: number
   faultPumps: number
+  totalSensors: number
   activeAlarms: number
   criticalAlarms: number
   avgPressure: number
