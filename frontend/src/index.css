@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #e8f0f3;
+  --bg: #ffffff;
   --card: #ffffff;
-  --ink: #0c2836;
-  --mut: #587383;
-  --line: #cddce3;
-  --water: #0aa5c4;
-  --on: #119e69;
-  --warn: #e08a00;
-  --pipe: #35505f;
-  --cas: #dbe7ec;
-  --mot: #2b4a5a;
-  --c1: #0aa5c4;
-  --c2: #5b6cf0;
-  --c3: #e08a00;
+  --ink: #0f172a;
+  --mut: #64748b;
+  --line: #e2e8f0;
+  --water: #0284c7;
+  --on: #10b981;
+  --warn: #f59e0b;
+  --pipe: #334155;
+  --cas: #f1f5f9;
+  --mot: #1e293b;
+  --c1: #0284c7;
+  --c2: #6366f1;
+  --c3: #f59e0b;
 
   font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color-scheme: light dark;

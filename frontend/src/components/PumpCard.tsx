@@ -20,8 +20,8 @@ export const PumpCard: React.FC<PumpCardProps> = ({
 
   return (
     <article
-      className={`bg-[var(--card)] border rounded-[22px] p-[18px] overflow-hidden transition-all shadow-xs flex flex-col justify-between ${
-        isLive ? 'border-[color-mix(in_srgb,var(--water)_45%,var(--line))] shadow-md' : 'border-[var(--line)]'
+      className={`bg-[var(--card)] border rounded-[22px] p-[18px] overflow-hidden transition-all shadow-xs hover:shadow-sm flex flex-col justify-between ${
+        isLive ? 'border-[color-mix(in_srgb,var(--water)_45%,var(--line))] shadow-sm' : 'border-[var(--line)]'
       }`}
     >
       <div>
@@ -92,7 +92,7 @@ export const PumpCard: React.FC<PumpCardProps> = ({
                 role="switch"
                 aria-checked={isMotorOn}
                 onClick={() => onToggleMotor(stationIndex, motorIdx)}
-                className="font-medium text-xs sm:text-sm text-[var(--ink)] bg-[var(--bg)] border border-[var(--line)] rounded-[14px] p-2.5 px-3 flex justify-between items-center cursor-pointer transition-all hover:border-[var(--water)]/50 focus-visible:outline-3 focus-visible:outline-[var(--water)] focus-visible:outline-offset-2 select-none"
+                className="font-medium text-xs sm:text-sm text-[var(--ink)] bg-[var(--cas)]/60 hover:bg-[var(--cas)] border border-[var(--line)] rounded-[14px] p-2.5 px-3 flex justify-between items-center cursor-pointer transition-all hover:border-[var(--water)]/50 focus-visible:outline-3 focus-visible:outline-[var(--water)] focus-visible:outline-offset-2 select-none"
               >
                 <span>Motor {k + 1}</span>
                 {/* Pill Switch */}
