@@ -1,0 +1,229 @@
+import React, { useState } from 'react'
+import type { LocationStation } from '../types/pump'
+import { Gauge, Waves, Activity } from 'lucide-react'
+
+interface TrendChartProps {
+  stations: LocationStation[]
+}
+
+export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
+  const [metricMode, setMetricMode] = useState<'pressure' | 'flowRate'>('pressure')
+
+  const maxVal = metricMode === 'pressure' ? 10 : 120
+  const unit = metricMode === 'pressure' ? 'bar' : 'L/min'
+  const numPoints = 60
+
+  // 4 Y-axis step levels
+  const yTicks = [
+    { ratio: 1.0, label: `${maxVal.toFixed(metricMode === 'pressure' ? 1 : 0)} ${unit}` },
+    { ratio: 0.67, label: `${(maxVal * 0.67).toFixed(metricMode === 'pressure' ? 1 : 0)} ${unit}` },
+    { ratio: 0.33, label: `${(maxVal * 0.33).toFixed(metricMode === 'pressure' ? 1 : 0)} ${unit}` },
+    { ratio: 0.0, label: `0.0 ${unit}` },
+  ]
+
+  return (
+    <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-5 sm:p-6 shadow-xs transition-all">
+      {/* Chart Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-[var(--ink)] m-0">
+              Tren Pembacaan Telemetri
+            </h2>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[color-mix(in_srgb,var(--on)_15%,transparent)] text-[var(--on)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--on)] animate-pulse" />
+              Live 1s
+            </span>
+          </div>
+          <p className="text-xs text-[var(--mut)] m-0 mt-0.5">
+            Pemantauan data sensor tekanan &amp; debit secara kontinu (60 detik terakhir)
+          </p>
+        </div>
+
+        {/* Metric Switch Tabs */}
+        <div className="inline-flex bg-[var(--bg)] rounded-xl p-1 border border-[var(--line)] self-start sm:self-auto">
+          <button
+            onClick={() => setMetricMode('pressure')}
+            className={`flex items-center gap-1.5 font-semibold text-xs py-2 px-3.5 rounded-lg cursor-pointer transition-all ${
+              metricMode === 'pressure'
+                ? 'bg-[var(--card)] text-[var(--ink)] shadow-xs font-bold'
+                : 'text-[var(--mut)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <Gauge className="w-3.5 h-3.5 text-[var(--water)]" />
+            <span>Tekanan (bar)</span>
+          </button>
+          <button
+            onClick={() => setMetricMode('flowRate')}
+            className={`flex items-center gap-1.5 font-semibold text-xs py-2 px-3.5 rounded-lg cursor-pointer transition-all ${
+              metricMode === 'flowRate'
+                ? 'bg-[var(--card)] text-[var(--ink)] shadow-xs font-bold'
+                : 'text-[var(--mut)] hover:text-[var(--ink)]'
+            }`}
+          >
+            <Waves className="w-3.5 h-3.5 text-[var(--c2)]" />
+            <span>Debit (L/min)</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Chart Area: HTML Y-Axis Labels + SVG Canvas */}
+      <div className="flex gap-3 items-stretch">
+        {/* Crisp HTML Y-Axis Labels (No SVG text stretching) */}
+        <div className="flex flex-col justify-between py-1 text-right select-none w-16 sm:w-20 shrink-0">
+          {yTicks.map((tick, idx) => (
+            <span
+              key={idx}
+              className="text-[11px] sm:text-xs font-mono font-medium text-[var(--mut)] tabular-nums"
+            >
+              {tick.label}
+            </span>
+          ))}
+        </div>
+
+        {/* SVG Drawing Canvas */}
+        <div className="flex-1 flex flex-col">
+          <div className="w-full h-[220px] rounded-xl bg-[var(--bg)]/40 border border-[var(--line)]/60 relative overflow-hidden">
+            {/* Horizontal Grid lines */}
+            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-3.5 px-0">
+              <div className="w-full border-b border-[var(--line)]/50 border-dashed" />
+              <div className="w-full border-b border-[var(--line)]/50 border-dashed" />
+              <div className="w-full border-b border-[var(--line)]/50 border-dashed" />
+              <div className="w-full border-b border-[var(--line)]/50 border-dashed" />
+            </div>
+
+            {/* SVG Data Curves */}
+            <svg
+              className="w-full h-full block"
+              viewBox="0 0 900 220"
+              preserveAspectRatio="none"
+              aria-label="Grafik tren sensor"
+            >
+              <defs>
+                {stations.map((s) => (
+                  <linearGradient
+                    key={`grad-${s.id}`}
+                    id={`grad-${s.id}`}
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
+                    <stop offset="100%" stopColor={s.color} stopOpacity="0.0" />
+                  </linearGradient>
+                ))}
+              </defs>
+
+              {/* Draw area and stroke paths for each station */}
+              {stations.map((station) => {
+                const historyData =
+                  metricMode === 'pressure'
+                    ? station.history.pressure
+                    : station.history.flowRate
+
+                if (historyData.length < 2) return null
+
+                const points = historyData.map((val, idx) => {
+                  const x = ((idx / (numPoints - 1)) * 900).toFixed(1)
+                  const clampedVal = Math.min(Math.max(val, 0), maxVal)
+                  // 195px usable height with 15px padding top/bottom
+                  const y = (205 - (clampedVal / maxVal) * 190).toFixed(1)
+                  return { x, y }
+                })
+
+                const pathD = points.reduce(
+                  (acc, p, i) => `${acc} ${i === 0 ? 'M' : 'L'}${p.x} ${p.y}`,
+                  ''
+                )
+                const areaD = `${pathD} L 900 220 L 0 220 Z`
+                const lastPoint = points[points.length - 1]
+
+                return (
+                  <g key={station.id}>
+                    {/* Area glow under line */}
+                    <path d={areaD} fill={`url(#grad-${station.id})`} />
+
+                    {/* Main Telemetry Line */}
+                    <path
+                      d={pathD}
+                      fill="none"
+                      stroke={station.color}
+                      strokeWidth="2.8"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      style={{ vectorEffect: 'non-scaling-stroke' }}
+                    />
+
+                    {/* Active Endpoint Pulsing Beacon */}
+                    {lastPoint && (
+                      <circle
+                        cx={lastPoint.x}
+                        cy={lastPoint.y}
+                        r="4.5"
+                        fill={station.color}
+                        stroke="var(--card)"
+                        strokeWidth="1.5"
+                      />
+                    )}
+                  </g>
+                )
+              })}
+            </svg>
+          </div>
+
+          {/* X-Axis Timeline Markers */}
+          <div className="flex justify-between text-[11px] font-mono text-[var(--mut)] pt-1.5 px-1 select-none">
+            <span>-60 detik</span>
+            <span>-40 detik</span>
+            <span>-20 detik</span>
+            <span className="flex items-center gap-1 font-bold text-[var(--ink)]">
+              <Activity className="w-3 h-3 text-[var(--on)] animate-pulse" />
+              Sekarang (Live)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Legend Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-[var(--line)]">
+        {stations.map((station) => {
+          const currentVal =
+            metricMode === 'pressure'
+              ? `${station.pressure.toFixed(2)} bar`
+              : `${station.flowRate.toFixed(1)} L/min`
+
+          const activeCount = station.motors[0] + station.motors[1]
+
+          return (
+            <div
+              key={station.id}
+              className="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-[var(--bg)]/50 border border-[var(--line)]/60"
+            >
+              <div className="flex items-center gap-2.5">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                  style={{ backgroundColor: station.color }}
+                />
+                <div>
+                  <h4 className="font-bold text-xs sm:text-[13px] text-[var(--ink)] leading-tight m-0">
+                    {station.name}
+                  </h4>
+                  <span className="text-[10px] text-[var(--mut)]">
+                    {activeCount > 0 ? `${activeCount} motor aktif` : 'Standby'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right font-mono">
+                <span className="font-extrabold text-sm sm:text-base tabular-nums text-[var(--ink)]">
+                  {currentVal}
+                </span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}

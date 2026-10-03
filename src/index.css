@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #e8f0f3;
+  --card: #ffffff;
+  --ink: #0c2836;
+  --mut: #587383;
+  --line: #cddce3;
+  --water: #0aa5c4;
+  --on: #119e69;
+  --warn: #e08a00;
+  --pipe: #35505f;
+  --cas: #dbe7ec;
+  --mot: #2b4a5a;
+  --c1: #0aa5c4;
+  --c2: #5b6cf0;
+  --c3: #e08a00;
+
+  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color-scheme: light dark;
+}
+
+:root[data-theme="dark"],
+.dark {
+  --bg: #06141b;
+  --card: #0c2230;
+  --ink: #e3f1f6;
+  --mut: #85a5b5;
+  --line: #1c3a4b;
+  --water: #25c5e4;
+  --on: #2fd493;
+  --warn: #f59e0b;
+  --pipe: #5d7f91;
+  --cas: #193647;
+  --mot: #4b7488;
+  --c1: #25c5e4;
+  --c2: #6b7bf4;
+  --c3: #f59e0b;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.font-heading {
+  font-family: 'Bricolage Grotesque', 'Figtree', sans-serif;
+}
+
+/* SCADA Pump SVG Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes flow {
+  to {
+    stroke-dashoffset: -16px;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes shakeMotor {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(0.7px);
+  }
+}
+
+.animate-spin-local {
+  animation: spin var(--spd, 1s) linear infinite;
+  transform-origin: 0px 0px;
+  transform-box: view-box;
+}
+
+.animate-pipe-flow {
+  animation: flow var(--fs, 1s) linear infinite;
+}
+
+.animate-pulse-led {
+  animation: pulseGlow 1s infinite;
+}
+
+.animate-shake-motor {
+  animation: shakeMotor 0.12s linear infinite;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 9999px;
+}
