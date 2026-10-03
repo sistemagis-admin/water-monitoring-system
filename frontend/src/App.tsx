@@ -21,6 +21,11 @@ export function App() {
     sensors,
     alarms,
     stats,
+    isBackendOnline,
+    isLiveSSE,
+    siteInfo,
+    currentUser,
+    reconnectBackend,
     addPump,
     addSensor,
     deleteSensor,
@@ -69,6 +74,11 @@ export function App() {
           {/* Header Bar */}
           <Header
             theme={theme}
+            isBackendOnline={isBackendOnline}
+            isLiveSSE={isLiveSSE}
+            siteInfo={siteInfo}
+            currentUser={currentUser}
+            onReconnect={reconnectBackend}
             onToggleTheme={toggleTheme}
             onEmergencyStop={() => setIsStopModalOpen(true)}
             onOpenAddPump={() => setIsAddPumpOpen(true)}

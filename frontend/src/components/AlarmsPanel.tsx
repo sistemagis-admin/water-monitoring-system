@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
 import type { AlarmItem } from '../types/pump'
-import { AlertOctagon, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { AlertOctagon, CheckCircle2, ShieldAlert, CheckCheck } from 'lucide-react'
 
 interface AlarmsPanelProps {
   alarms: AlarmItem[]
@@ -8,7 +8,14 @@ interface AlarmsPanelProps {
 }
 
 export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge }) => {
-  const openAlarms = alarms.filter((a) => a.status === 'OPEN')
+  const [filterStatus, setFilterStatus] = useState<'OPEN' | 'ACKNOWLEDGED' | 'ALL'>('OPEN')
+
+  const filteredAlarms = alarms.filter((a) => {
+    if (filterStatus === 'ALL') return true
+    return a.status === filterStatus
+  })
+
+  const openAlarmsCount = alarms.filter((a) => a.status === 'OPEN').length
 
   const getSeverityBadge = (severity: AlarmItem['severity']) => {
     switch (severity) {
@@ -36,35 +43,73 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
               Panel Alarm &amp; Kondisi Abnormal
             </h3>
             <span className="text-xs text-slate-500">
-              Evaluasi rule engine otomatis real-time
+              Evaluasi rule engine otomatis real-time Fastify Backend
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full text-xs font-extrabold text-white bg-red-600 shadow-2xs">
-            {openAlarms.length} Alarm Aktif
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Status Filter Buttons */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-xl">
+            <button
+              onClick={() => setFilterStatus('OPEN')}
+              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                filterStatus === 'OPEN'
+                  ? 'bg-red-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Aktif ({openAlarmsCount})
+            </button>
+            <button
+              onClick={() => setFilterStatus('ACKNOWLEDGED')}
+              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                filterStatus === 'ACKNOWLEDGED'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Diakui
+            </button>
+            <button
+              onClick={() => setFilterStatus('ALL')}
+              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                filterStatus === 'ALL'
+                  ? 'bg-slate-800 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Semua ({alarms.length})
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Alarms List */}
-      {openAlarms.length === 0 ? (
+      {filteredAlarms.length === 0 ? (
         <div className="py-8 text-center flex flex-col items-center justify-center text-slate-400 bg-slate-50/70 border border-slate-100 rounded-xl">
           <CheckCircle2 className="w-8 h-8 text-emerald-600 mb-2" />
           <p className="font-bold text-sm text-slate-700 m-0">
-            Seluruh Sistem Normal
+            {filterStatus === 'OPEN'
+              ? 'Seluruh Sistem Normal'
+              : 'Tidak ada data alarm untuk filter ini'}
           </p>
           <span className="text-xs text-slate-500">
-            Tidak ada alarm aktif pada seluruh site &amp; pompa saat ini.
+            {filterStatus === 'OPEN'
+              ? 'Tidak ada alarm aktif pada seluruh site & pompa saat ini.'
+              : 'Silakan ubah filter status untuk melihat riwayat alarm lain.'}
           </span>
         </div>
       ) : (
         <div className="space-y-2.5">
-          {openAlarms.map((alarm) => (
+          {filteredAlarms.map((alarm) => (
             <div
               key={alarm.id}
-              className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              className={`p-3.5 sm:p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                alarm.status === 'OPEN'
+                  ? 'bg-red-50/30 border-red-200/80'
+                  : 'bg-slate-50 border-slate-200'
+              }`}
             >
               <div className="flex items-start gap-3">
                 <span
@@ -87,6 +132,12 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
                     <span className="text-xs text-slate-400 font-mono">
                       ({alarm.openedAt})
                     </span>
+                    {alarm.status === 'ACKNOWLEDGED' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-extrabold">
+                        <CheckCheck className="w-3 h-3" />
+                        Diakui {alarm.acknowledgedBy ? `(${alarm.acknowledgedBy})` : ''}
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-600 m-0 mt-0.5 leading-relaxed">
                     {alarm.message}
@@ -95,13 +146,15 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
               </div>
 
               {/* Acknowledge Button */}
-              <button
-                onClick={() => onAcknowledge(alarm.id)}
-                className="self-end sm:self-auto px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 active:bg-black text-white text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 flex items-center gap-1.5 active:scale-95"
-              >
-                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                <span>Acknowledge</span>
-              </button>
+              {alarm.status === 'OPEN' && (
+                <button
+                  onClick={() => onAcknowledge(alarm.id)}
+                  className="self-end sm:self-auto px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 active:bg-black text-white text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 flex items-center gap-1.5 active:scale-95"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Acknowledge</span>
+                </button>
+              )}
             </div>
           ))}
         </div>
