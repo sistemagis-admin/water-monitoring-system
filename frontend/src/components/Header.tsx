@@ -1,27 +1,27 @@
 import React from 'react'
-import { Sun, Moon, AlertOctagon } from 'lucide-react'
+import { Sun, Moon, AlertOctagon, Plus, Radio } from 'lucide-react'
 
 interface HeaderProps {
   theme: 'light' | 'dark'
   onToggleTheme: () => void
   onEmergencyStop: () => void
+  onOpenAddPump?: () => void
+  onOpenAddSensor?: () => void
 }
 
 export const Header: React.FC<HeaderProps> = ({
   theme,
   onToggleTheme,
   onEmergencyStop,
+  onOpenAddPump,
+  onOpenAddSensor,
 }) => {
   return (
     <header className="flex flex-wrap gap-4 justify-between items-center mb-6 pb-4 border-b border-[var(--line)]">
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <span className="px-2 py-0.5 rounded-md bg-[var(--amp-teal)] text-white text-[11px] font-extrabold uppercase tracking-wide">
+          <span className="px-2.5 py-0.5 rounded-md bg-[var(--amp-teal)] text-white text-[11px] font-extrabold uppercase tracking-wide">
             PT Ascon Multi Pratama
-          </span>
-          <span className="px-2 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-extrabold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            SSE Live 1s
           </span>
         </div>
         <h1 className="font-heading font-extrabold text-2xl sm:text-3xl lg:text-[34px] tracking-tight m-0 mb-1 leading-none text-slate-900">
@@ -32,7 +32,31 @@ export const Header: React.FC<HeaderProps> = ({
         </p>
       </div>
 
-      <div className="flex items-center gap-2.5 sm:gap-3.5">
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        {/* Add Pump Button */}
+        {onOpenAddPump && (
+          <button
+            onClick={onOpenAddPump}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--amp-teal)] hover:opacity-90 active:scale-95 text-white text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs"
+            title="Tambah pompa baru"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Tambah Pompa</span>
+          </button>
+        )}
+
+        {/* Add Sensor Button */}
+        {onOpenAddSensor && (
+          <button
+            onClick={onOpenAddSensor}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[var(--amp-magenta)] hover:opacity-90 active:scale-95 text-white text-xs sm:text-sm font-bold transition-all cursor-pointer shadow-xs"
+            title="Tambah sensor & binding"
+          >
+            <Radio className="w-4 h-4" />
+            <span>Tambah Sensor</span>
+          </button>
+        )}
+
         {/* Emergency Stop Button (Solid Red, White Text) */}
         <button
           onClick={onEmergencyStop}

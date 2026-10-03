@@ -2,6 +2,10 @@ import React, { useState } from 'react'
 import logoAmp from '../assets/logo/amp.png'
 import {
   LayoutDashboard,
+  Layers,
+  Radio,
+  Server,
+  AlertOctagon,
   User,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +33,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev)
   }
+
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'pumps', label: 'Pompa & Area', icon: Layers },
+    { id: 'sensors', label: 'Sensor & Instrument', icon: Radio },
+    { id: 'devices', label: 'Gateway IoT', icon: Server },
+    { id: 'alarms', label: 'Alarm & Event', icon: AlertOctagon },
+  ]
 
   return (
     <aside
@@ -98,39 +110,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* 2. Top-Aligned Navigation Items (Directly Under Logo) */}
-      <div className="flex-1 flex flex-col gap-2 mt-3 pt-2 border-t border-slate-100 w-full">
-        {/* Dashboard Menu Button */}
-        <div className="relative group w-full">
-          <button
-            onClick={() => handleItemClick('dashboard')}
-            className={`w-full rounded-2xl flex items-center transition-all duration-200 cursor-pointer ${
-              currentTab === 'dashboard'
-                ? 'text-white bg-[var(--amp-teal)] shadow-sm'
-                : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'
-            } ${
-              isExpanded
-                ? 'px-3 py-2.5 gap-3 font-bold text-xs sm:text-sm'
-                : 'w-10 h-10 sm:w-11 sm:h-11 mx-auto justify-center hover:scale-105 active:scale-95'
-            }`}
-            aria-label="Dashboard Monitoring"
-          >
-            <LayoutDashboard className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
-            {isExpanded && (
-              <span className="truncate tracking-tight font-bold">
-                Dashboard
-              </span>
-            )}
-          </button>
+      {/* 2. Navigation Items */}
+      <div className="flex-1 flex flex-col gap-1.5 mt-3 pt-2 border-t border-slate-100 w-full">
+        {navItems.map((item) => {
+          const Icon = item.icon
+          const isActive = currentTab === item.id
 
-          {/* Floating Tooltip on Hover when Collapsed */}
-          {!isExpanded && (
-            <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
-              Dashboard Monitoring
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+          return (
+            <div key={item.id} className="relative group w-full">
+              <button
+                onClick={() => handleItemClick(item.id)}
+                className={`w-full rounded-2xl flex items-center transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'text-white bg-[var(--amp-teal)] shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                } ${
+                  isExpanded
+                    ? 'px-3 py-2.5 gap-3 font-bold text-xs sm:text-sm'
+                    : 'w-10 h-10 sm:w-11 sm:h-11 mx-auto justify-center hover:scale-105 active:scale-95'
+                }`}
+                aria-label={item.label}
+              >
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
+                {isExpanded && (
+                  <span className="truncate tracking-tight font-bold">
+                    {item.label}
+                  </span>
+                )}
+              </button>
+
+              {/* Floating Tooltip on Hover when Collapsed */}
+              {!isExpanded && (
+                <div className="pointer-events-none absolute left-full ml-3 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-slate-900 text-white text-[11px] font-semibold rounded-lg shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-150 z-50">
+                  {item.label}
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-slate-900" />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          )
+        })}
       </div>
 
       {/* 3. Bottom Section: Profile Avatar Only */}

@@ -4,6 +4,9 @@ import type {
   PumpAsset,
   AlarmItem,
   DeviceGateway,
+  SensorItem,
+  AddPumpInput,
+  AddSensorInput,
   SimulationStats,
 } from '../types/pump'
 
@@ -31,6 +34,162 @@ const INITIAL_GATEWAYS: DeviceGateway[] = [
     firmware: 'v1.0.4',
     rssi: -65,
     ip: '10.10.20.16',
+  },
+]
+
+const INITIAL_SENSORS: SensorItem[] = [
+  {
+    id: 'sns-01',
+    code: 'PT-01',
+    name: 'Discharge Pressure Transmitter',
+    sensorType: 'PRESSURE_SENSOR',
+    metricCode: 'pressure_bar',
+    unit: 'bar',
+    targetType: 'AREA',
+    targetId: 'room-01',
+    targetName: 'Basement (Room 01)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 3.21,
+    minThreshold: 0.5,
+    maxThreshold: 6.0,
+    lastCalibration: '15 Sep 2026',
+  },
+  {
+    id: 'sns-02',
+    code: 'FT-01',
+    name: 'Main Intake Flow Meter',
+    sensorType: 'FLOW_METER',
+    metricCode: 'flow_m3h',
+    unit: 'm³/h',
+    targetType: 'AREA',
+    targetId: 'room-01',
+    targetName: 'Basement (Room 01)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 40.2,
+    minThreshold: 0.0,
+    maxThreshold: 100.0,
+    lastCalibration: '12 Sep 2026',
+  },
+  {
+    id: 'sns-03',
+    code: 'LVL-01',
+    name: 'Reservoir Intake Ultrasonic Level',
+    sensorType: 'LEVEL_SENSOR',
+    metricCode: 'tank_level_pct',
+    unit: '%',
+    targetType: 'AREA',
+    targetId: 'room-01',
+    targetName: 'Basement (Room 01)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 74.5,
+    minThreshold: 20.0,
+    maxThreshold: 95.0,
+    lastCalibration: '01 Sep 2026',
+  },
+  {
+    id: 'sns-04',
+    code: 'PT-02',
+    name: 'Booster Header Pressure Sensor',
+    sensorType: 'PRESSURE_SENSOR',
+    metricCode: 'pressure_bar',
+    unit: 'bar',
+    targetType: 'AREA',
+    targetId: 'room-02',
+    targetName: 'Booster Pump (Room 02)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 4.62,
+    minThreshold: 1.0,
+    maxThreshold: 7.5,
+    lastCalibration: '18 Sep 2026',
+  },
+  {
+    id: 'sns-05',
+    code: 'FT-02',
+    name: 'Booster Distribution Flow Meter',
+    sensorType: 'FLOW_METER',
+    metricCode: 'flow_m3h',
+    unit: 'm³/h',
+    targetType: 'AREA',
+    targetId: 'room-02',
+    targetName: 'Booster Pump (Room 02)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 68.4,
+    minThreshold: 0.0,
+    maxThreshold: 120.0,
+    lastCalibration: '18 Sep 2026',
+  },
+  {
+    id: 'sns-06',
+    code: 'LVL-02',
+    name: 'Intermediate Tank Level Sensor',
+    sensorType: 'LEVEL_SENSOR',
+    metricCode: 'tank_level_pct',
+    unit: '%',
+    targetType: 'AREA',
+    targetId: 'room-02',
+    targetName: 'Booster Pump (Room 02)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 82.0,
+    minThreshold: 15.0,
+    maxThreshold: 98.0,
+    lastCalibration: '05 Sep 2026',
+  },
+  {
+    id: 'sns-07',
+    code: 'PT-03',
+    name: 'Heater Loop Pressure Sensor',
+    sensorType: 'PRESSURE_SENSOR',
+    metricCode: 'pressure_bar',
+    unit: 'bar',
+    targetType: 'AREA',
+    targetId: 'room-03',
+    targetName: 'Heater Pump (Room 03)',
+    deviceId: 'gw-002',
+    status: 'ACTIVE',
+    currentValue: 0.15,
+    minThreshold: 0.2,
+    maxThreshold: 5.0,
+    lastCalibration: '20 Sep 2026',
+  },
+  {
+    id: 'sns-08',
+    code: 'TT-01',
+    name: 'Heater Water Temperature Sensor',
+    sensorType: 'TEMPERATURE_SENSOR',
+    metricCode: 'temp_c',
+    unit: '°C',
+    targetType: 'AREA',
+    targetId: 'room-03',
+    targetName: 'Heater Pump (Room 03)',
+    deviceId: 'gw-002',
+    status: 'ACTIVE',
+    currentValue: 45.0,
+    minThreshold: 10.0,
+    maxThreshold: 85.0,
+    lastCalibration: '20 Sep 2026',
+  },
+  {
+    id: 'sns-09',
+    code: 'VIB-01',
+    name: 'Vibration Transmitter Booster P-03',
+    sensorType: 'VIBRATION_SENSOR',
+    metricCode: 'vibration_mms',
+    unit: 'mm/s',
+    targetType: 'PUMP',
+    targetId: 'pump-03',
+    targetName: 'Pump 03 (Booster High)',
+    deviceId: 'gw-001',
+    status: 'ACTIVE',
+    currentValue: 1.25,
+    minThreshold: 0.0,
+    maxThreshold: 4.5,
+    lastCalibration: '22 Sep 2026',
   },
 ]
 
@@ -274,11 +433,118 @@ const INITIAL_ROOMS: AreaRoom[] = [
 export function usePumpSystem() {
   const [rooms, setRooms] = useState<AreaRoom[]>(INITIAL_ROOMS)
   const [gateways, setGateways] = useState<DeviceGateway[]>(INITIAL_GATEWAYS)
+  const [sensors, setSensors] = useState<SensorItem[]>(INITIAL_SENSORS)
   const [alarms, setAlarms] = useState<AlarmItem[]>(INITIAL_ALARMS)
   const [isSimulating, setIsSimulating] = useState<boolean>(true)
   const [lastTime, setLastTime] = useState<string>(() =>
     new Date().toLocaleTimeString('id-ID').replace(/\./g, ':')
   )
+
+  // Add new pump dynamically (PRD FR-005 & FR-006)
+  const addPump = useCallback((input: AddPumpInput) => {
+    setRooms((prevRooms) => {
+      const roomIndex = prevRooms.findIndex((r) => r.id === input.areaId)
+      if (roomIndex === -1) return prevRooms
+
+      const targetRoom = prevRooms[roomIndex]
+      const newPumpId = `pump-${Date.now()}`
+
+      const newPumpAsset: PumpAsset = {
+        id: newPumpId,
+        code: input.code,
+        name: input.name,
+        areaId: targetRoom.id,
+        areaName: targetRoom.name,
+        motorIndex: input.motorIndex,
+        status: 'STOPPED',
+        controlEnabled: input.controlEnabled,
+        remoteAllowed: input.controlEnabled,
+        commandState: 'IDLE',
+        metrics: {
+          pressure_bar: 0.15,
+          flow_m3h: 0.0,
+          tank_level_pct: targetRoom.tankLevel || 75,
+          power_kw: 0.0,
+          current_a: 0.0,
+          voltage_v: 380.0,
+          frequency_hz: 0.0,
+          motor_temp_c: 25.0,
+          energy_kwh: 120.0,
+        },
+      }
+
+      const updatedPumps = [...targetRoom.pumps] as [PumpAsset, PumpAsset]
+      if (input.motorIndex === 0) {
+        updatedPumps[0] = newPumpAsset
+      } else {
+        updatedPumps[1] = newPumpAsset
+      }
+
+      const updatedRoom: AreaRoom = {
+        ...targetRoom,
+        pumps: updatedPumps,
+      }
+
+      const newRooms = [...prevRooms]
+      newRooms[roomIndex] = updatedRoom
+      return newRooms
+    })
+  }, [])
+
+  // Add new sensor dynamically with binding (PRD FR-006 & Section 24.10 / 24.11)
+  const addSensor = useCallback(
+    (input: AddSensorInput) => {
+      const targetRoom = rooms.find((r) => r.id === input.targetId)
+      const targetPump = rooms.flatMap((r) => r.pumps).find((p) => p.id === input.targetId)
+
+      let targetName = 'System'
+      if (input.targetType === 'AREA') {
+        targetName = targetRoom ? `${targetRoom.name} (${targetRoom.number})` : 'Area'
+      } else {
+        targetName = targetPump ? targetPump.name : 'Pump'
+      }
+
+      const initialVal = input.metricCode.includes('pressure')
+        ? +(2.5 + Math.random() * 2).toFixed(2)
+        : input.metricCode.includes('flow')
+        ? +(40 + Math.random() * 30).toFixed(1)
+        : input.metricCode.includes('temp')
+        ? +(35 + Math.random() * 15).toFixed(1)
+        : input.metricCode.includes('level')
+        ? +(60 + Math.random() * 30).toFixed(1)
+        : +(1.0 + Math.random() * 2).toFixed(2)
+
+      const newSensor: SensorItem = {
+        id: `sns-${Date.now()}`,
+        code: input.code,
+        name: input.name,
+        sensorType: input.sensorType,
+        metricCode: input.metricCode,
+        unit: input.unit,
+        targetType: input.targetType,
+        targetId: input.targetId,
+        targetName,
+        deviceId: input.deviceId,
+        status: 'ACTIVE',
+        currentValue: initialVal,
+        minThreshold: input.minThreshold,
+        maxThreshold: input.maxThreshold,
+        lastCalibration: new Date().toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }),
+      }
+
+      setSensors((prev) => [newSensor, ...prev])
+    },
+    [rooms]
+  )
+
+  // Delete sensor
+  const deleteSensor = useCallback((sensorId: string) => {
+    setSensors((prev) => prev.filter((s) => s.id !== sensorId))
+  }, [])
 
   // Toggle pump motor state with commanded verification
   const togglePumpPower = useCallback((roomIndex: number, motorIndex: 0 | 1) => {
@@ -356,6 +622,7 @@ export function usePumpSystem() {
       const nowStr = new Date().toLocaleTimeString('id-ID').replace(/\./g, ':')
       setLastTime(nowStr)
 
+      // Step rooms & pumps physics
       setRooms((prevRooms) =>
         prevRooms.map((room) => {
           const m1Running = room.pumps[0].status === 'RUNNING' ? 1 : 0
@@ -426,10 +693,36 @@ export function usePumpSystem() {
           }
         })
       )
+
+      // Sync sensor live readings with active system
+      setSensors((prevSensors) =>
+        prevSensors.map((sensor) => {
+          let updatedVal = sensor.currentValue
+          if (sensor.metricCode === 'pressure_bar') {
+            const matchedRoom = rooms.find((r) => r.id === sensor.targetId)
+            if (matchedRoom) {
+              updatedVal = +matchedRoom.pressure.toFixed(2)
+            }
+          } else if (sensor.metricCode === 'flow_m3h') {
+            const matchedRoom = rooms.find((r) => r.id === sensor.targetId)
+            if (matchedRoom) {
+              updatedVal = +matchedRoom.flowRate.toFixed(1)
+            }
+          } else if (sensor.metricCode === 'tank_level_pct') {
+            updatedVal = +(sensor.currentValue + (Math.random() - 0.5) * 0.1).toFixed(1)
+          } else if (sensor.metricCode === 'temp_c') {
+            updatedVal = +(sensor.currentValue + (Math.random() - 0.5) * 0.2).toFixed(1)
+          }
+          return {
+            ...sensor,
+            currentValue: updatedVal,
+          }
+        })
+      )
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isSimulating])
+  }, [isSimulating, rooms])
 
   // Aggregate System KPI Stats based on PRD Section 21.2 & 29
   let totalPumps = 0
@@ -463,6 +756,7 @@ export function usePumpSystem() {
     runningPumps,
     stoppedPumps,
     faultPumps,
+    totalSensors: sensors.length,
     activeAlarms: activeAlarmsCount,
     criticalAlarms: criticalAlarmsCount,
     avgPressure,
@@ -478,11 +772,16 @@ export function usePumpSystem() {
     stations: rooms,
     gateways,
     setGateways,
+    sensors,
+    setSensors,
     alarms,
     setAlarms,
     stats,
     isSimulating,
     setIsSimulating,
+    addPump,
+    addSensor,
+    deleteSensor,
     togglePumpPower,
     toggleMotor: togglePumpPower,
     emergencyStop,

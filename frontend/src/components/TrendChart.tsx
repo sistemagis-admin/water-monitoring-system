@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { LocationStation } from '../types/pump'
-import { Gauge, Waves, Activity } from 'lucide-react'
+import { Gauge, Waves, Activity, Layers, Flame } from 'lucide-react'
 
 interface TrendChartProps {
   stations: LocationStation[]
@@ -26,15 +26,9 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
       {/* Chart Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-[var(--ink)] m-0">
-              Tren Pembacaan Telemetri
-            </h2>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[color-mix(in_srgb,var(--on)_15%,transparent)] text-[var(--on)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--on)] animate-pulse" />
-              Live 1s
-            </span>
-          </div>
+          <h2 className="font-heading font-extrabold text-xl sm:text-2xl text-[var(--ink)] m-0">
+            Tren Pembacaan Telemetri
+          </h2>
           <p className="text-xs text-[var(--mut)] m-0 mt-0.5">
             Pemantauan data sensor tekanan &amp; debit secara kontinu (60 detik terakhir)
           </p>
@@ -157,9 +151,8 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
             <span>-60 detik</span>
             <span>-40 detik</span>
             <span>-20 detik</span>
-            <span className="flex items-center gap-1 font-bold text-[var(--ink)]">
-              <Activity className="w-3 h-3 text-[var(--on)] animate-pulse" />
-              Sekarang (Live)
+            <span className="font-bold text-[var(--ink)]">
+              Sekarang
             </span>
           </div>
         </div>
@@ -175,16 +168,31 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
 
           const activeCount = station.motors[0] + station.motors[1]
 
+          const renderIcon = () => {
+            if (station.id.includes('01') || station.name.toLowerCase().includes('basement')) {
+              return <Layers className="w-3.5 h-3.5 text-white" />
+            }
+            if (station.id.includes('02') || station.name.toLowerCase().includes('booster')) {
+              return <Gauge className="w-3.5 h-3.5 text-white" />
+            }
+            if (station.id.includes('03') || station.name.toLowerCase().includes('heater')) {
+              return <Flame className="w-3.5 h-3.5 text-white" />
+            }
+            return <Activity className="w-3.5 h-3.5 text-white" />
+          }
+
           return (
             <div
               key={station.id}
               className="flex items-center justify-between p-2.5 px-3.5 rounded-xl bg-[var(--cas)]/40 border border-[var(--line)]/60"
             >
               <div className="flex items-center gap-2.5">
-                <span
-                  className="w-3 h-3 rounded-full shrink-0 shadow-xs"
+                <div
+                  className="w-7 h-7 rounded-lg shrink-0 shadow-xs flex items-center justify-center"
                   style={{ backgroundColor: station.color }}
-                />
+                >
+                  {renderIcon()}
+                </div>
                 <div>
                   <h4 className="font-bold text-xs sm:text-[13px] text-[var(--ink)] leading-tight m-0">
                     {station.name}

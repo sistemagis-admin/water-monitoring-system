@@ -2,11 +2,38 @@ import React from 'react'
 import type { LocationStation } from '../types/pump'
 import { PumpSceneSvg } from './PumpSceneSvg'
 import { ArcGauge } from './ArcGauge'
+import { Layers, Gauge, Flame, Activity } from 'lucide-react'
 
 interface PumpCardProps {
   station: LocationStation
   stationIndex: number
   onToggleMotor: (stationIndex: number, motorIndex: 0 | 1) => void
+}
+
+const getRoomIcon = (id: string, name: string) => {
+  if (id.includes('01') || name.toLowerCase().includes('basement')) {
+    return <Layers className="w-4 h-4 text-white" />
+  }
+  if (id.includes('02') || name.toLowerCase().includes('booster')) {
+    return <Gauge className="w-4 h-4 text-white" />
+  }
+  if (id.includes('03') || name.toLowerCase().includes('heater')) {
+    return <Flame className="w-4 h-4 text-white" />
+  }
+  return <Activity className="w-4 h-4 text-white" />
+}
+
+const getRoomBg = (id: string, name: string) => {
+  if (id.includes('01') || name.toLowerCase().includes('basement')) {
+    return 'bg-[var(--amp-teal)]'
+  }
+  if (id.includes('02') || name.toLowerCase().includes('booster')) {
+    return 'bg-[var(--amp-purple)]'
+  }
+  if (id.includes('03') || name.toLowerCase().includes('heater')) {
+    return 'bg-[var(--amp-magenta)]'
+  }
+  return 'bg-slate-700'
 }
 
 export const PumpCard: React.FC<PumpCardProps> = ({
@@ -25,15 +52,25 @@ export const PumpCard: React.FC<PumpCardProps> = ({
       }`}
     >
       <div>
-        {/* Card Header Top */}
-        <div className="flex justify-between items-center mb-1">
-          <div>
-            <h2 className="font-heading font-extrabold text-[21px] text-[var(--ink)] m-0 leading-tight">
-              {station.name}
-            </h2>
-            <span className="text-xs text-[var(--mut)]">
-              {station.code} · Lokasi {station.number}
-            </span>
+        {/* Card Header Top with Solid Icon Badge */}
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`w-9 h-9 rounded-xl ${getRoomBg(
+                station.id,
+                station.name
+              )} text-white flex items-center justify-center shrink-0 shadow-xs`}
+            >
+              {getRoomIcon(station.id, station.name)}
+            </div>
+            <div>
+              <h2 className="font-heading font-extrabold text-[19px] sm:text-[21px] text-[var(--ink)] m-0 leading-tight">
+                {station.name}
+              </h2>
+              <span className="text-xs text-[var(--mut)]">
+                {station.code} · Lokasi {station.number}
+              </span>
+            </div>
           </div>
 
           <span
