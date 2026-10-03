@@ -36,7 +36,7 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
               Panel Alarm &amp; Kondisi Abnormal
             </h3>
             <span className="text-xs text-slate-500">
-              Evaluasi rule engine otomatis real-time (PRD FR-011)
+              Evaluasi rule engine otomatis real-time
             </span>
           </div>
         </div>

@@ -111,15 +111,23 @@ export function App() {
             />
           )}
 
-          {/* 4. Alarms & Device Connectivity Panels Grid */}
-          {(activeTab === 'dashboard' || activeTab === 'alarms' || activeTab === 'devices') && (
+          {/* 4. Alarms & Device Connectivity Panels */}
+          {activeTab === 'dashboard' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 mb-6">
-              {(activeTab === 'dashboard' || activeTab === 'alarms') && (
-                <AlarmsPanel alarms={alarms} onAcknowledge={acknowledgeAlarm} />
-              )}
-              {(activeTab === 'dashboard' || activeTab === 'devices') && (
-                <DeviceHealthTable gateways={gateways} />
-              )}
+              <AlarmsPanel alarms={alarms} onAcknowledge={acknowledgeAlarm} />
+              <DeviceHealthTable gateways={gateways} />
+            </div>
+          )}
+
+          {activeTab === 'alarms' && (
+            <div className="mb-6">
+              <AlarmsPanel alarms={alarms} onAcknowledge={acknowledgeAlarm} />
+            </div>
+          )}
+
+          {activeTab === 'devices' && (
+            <div className="mb-6">
+              <DeviceHealthTable gateways={gateways} />
             </div>
           )}
         </div>
