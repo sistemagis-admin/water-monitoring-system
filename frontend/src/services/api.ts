@@ -3,11 +3,21 @@
  * Full integration client connecting all Fastify v5 REST endpoints & SSE Stream
  */
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'http://localhost:3000'
-    : 'http://192.168.100.6:3000')
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('swpms_backend_url')
+    if (stored && stored.trim()) {
+      return stored.trim().replace(/\/+$/, '')
+    }
+  }
+  const envUrl = import.meta.env.VITE_API_BASE_URL
+  if (envUrl && envUrl.trim()) {
+    return envUrl.trim().replace(/\/+$/, '')
+  }
+  return 'http://192.168.100.6:3000'
+}
+
+export const API_BASE_URL = getApiBaseUrl()
 
 const TOKEN_KEY = 'swpms_access_token'
 const USER_KEY = 'swpms_user'
@@ -81,7 +91,8 @@ async function request<T = any>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+  const baseUrl = getApiBaseUrl()
+  const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
 
   const response = await fetch(url, {
     ...options,
@@ -460,7 +471,8 @@ export function subscribeRealtimeSSE(options: SSEOptions): () => void {
   if (options.siteId) q.append('site_id', options.siteId)
   if (token) q.append('token', token)
 
-  const sseUrl = `${API_BASE_URL}/api/v1/realtime/stream?${q.toString()}`
+  const baseUrl = getApiBaseUrl()
+  const sseUrl = `${baseUrl}/api/v1/realtime/stream?${q.toString()}`
   let eventSource: EventSource | null = null
 
   try {

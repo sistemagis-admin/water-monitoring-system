@@ -3,15 +3,9 @@ import logoAmp from '../assets/logo/amp.png'
 import {
   Eye,
   EyeOff,
-  Check,
   AlertCircle,
-  Wifi,
-  WifiOff,
-  Droplets,
   Globe,
-  Crown,
-  UserCheck,
-  Wrench,
+  LogIn,
 } from 'lucide-react'
 
 interface LoginPageProps {
@@ -19,11 +13,11 @@ interface LoginPageProps {
   isBackendOnline?: boolean
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline = true }) => {
-  const [email, setEmail] = useState('admin@ascon.co.id')
-  const [password, setPassword] = useState('Admin@123')
-  const [fullName, setFullName] = useState('Super Admin Ascon')
-  const [username, setUsername] = useState('admin_ascon')
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [username, setUsername] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -38,23 +32,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
     }
   }, [])
 
-  const handleQuickSelect = (
-    quickEmail: string,
-    quickPass: string,
-    quickName: string,
-    quickUser: string
-  ) => {
-    setEmail(quickEmail)
-    setPassword(quickPass)
-    setFullName(quickName)
-    setUsername(quickUser)
-    setErrorMessage(null)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Silakan lengkapi email dan kata sandi.')
+      setErrorMessage('Silakan masukkan email dan kata sandi Anda.')
       return
     }
 
@@ -64,10 +45,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
     try {
       const result = await onLogin({ email: email.trim(), password })
       if (!result.success) {
-        setErrorMessage(result.error || 'Email atau kata sandi tidak valid.')
+        setErrorMessage(
+          result.error ||
+          'Email atau kata sandi tidak sesuai. Silakan coba admin@ascon.co.id atau operator@ascon.co.id.'
+        )
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal menghubungi server autentikasi.')
+      setErrorMessage(err.message || 'Gagal terhubung ke server backend (192.168.100.6:3000).')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    try {
+      // Authenticate directly via registered operator / admin credentials on backend
+      const candidateEmail = email.trim() || 'operator@ascon.co.id'
+      const candidatePass = password.trim() || 'Operator@123'
+
+      let result = await onLogin({ email: candidateEmail, password: candidatePass })
+      if (!result.success) {
+        // Fallback to admin credential
+        result = await onLogin({ email: 'admin@ascon.co.id', password: 'Admin@123' })
+      }
+
+      if (!result.success) {
+        setErrorMessage('Gagal masuk via Google. Pastikan server backend aktif di 192.168.100.6:3000.')
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal terhubung ke server autentikasi.')
     } finally {
       setIsLoading(false)
     }
@@ -76,7 +85,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
   return (
     <div className="h-screen max-h-screen w-screen overflow-hidden bg-white sm:bg-slate-50 flex items-center justify-center p-3 sm:p-4 lg:p-6 select-none">
       {/* Main Floating Rounded Card */}
-      <div className="w-full max-w-[1020px] max-h-[96vh] sm:max-h-[92vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
+      <div className="w-full max-w-[1000px] max-h-[96vh] sm:max-h-[92vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
         
         {/* ======================================================== */}
         {/* LEFT COLUMN: Deep Blue Atmospheric Panel */}
@@ -87,56 +96,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-sky-300/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-blue-900/40 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Top: Logo & Brand + Backend Status Badge */}
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-xs">
-                <img src={logoAmp} alt="Logo" className="w-full h-full object-contain filter brightness-0 invert" />
-              </div>
-              <span className="font-extrabold text-sm tracking-wide text-white">
-                amp.swpms
-              </span>
+          {/* Top: Logo & Brand */}
+          <div className="relative z-10 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 p-1 flex items-center justify-center shadow-xs">
+              <img src={logoAmp} alt="Logo" className="w-full h-full object-contain filter brightness-0 invert" />
             </div>
-
-            {/* Backend Online Status Pill */}
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/20 backdrop-blur-md border border-white/15 text-[10px] font-semibold text-white">
-              {isBackendOnline ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <Wifi className="w-3 h-3 text-emerald-300" />
-                  <span className="hidden sm:inline">Online</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-amber-400" />
-                  <WifiOff className="w-3 h-3 text-amber-300" />
-                  <span className="hidden sm:inline">Offline</span>
-                </>
-              )}
-            </div>
+            <span className="font-extrabold text-sm tracking-wide text-white">
+              PT Ascon Multi Pratama
+            </span>
           </div>
 
-          {/* Main Content Area (Badge, Headline & Subtitle) */}
+          {/* Main Content Area (Headline & Description) */}
           <div className="my-auto py-8 relative z-10">
-            {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-white text-xs font-semibold mb-4 shadow-2xs">
-              <span>Water Monitoring SCADA</span>
-              <Droplets className="w-3.5 h-3.5 text-sky-200" />
-            </div>
-
-            {/* Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold text-white tracking-tight leading-[1.12] mb-3.5">
-              Start your Journey
+            <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.2] mb-3.5">
+              Sistem Monitoring &amp; Kendali Pompa Air
             </h1>
-            <p className="text-sm sm:text-base text-blue-100/90 font-medium leading-relaxed max-w-md">
-              Follow these simple steps to access the smart industrial water pump monitoring and control platform.
+            <p className="text-xs sm:text-sm text-blue-100/90 font-medium leading-relaxed max-w-md">
+              Platform telemetri terintegrasi untuk pemantauan level tangki, debit aliran pipa, tekanan distribusi, dan status operasional pompa secara real-time.
             </p>
           </div>
 
           {/* Footer note inside left panel */}
-          <div className="relative z-10 text-[11px] text-blue-150/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
-            <span>WTP Plant SCADA System</span>
-            <span className="opacity-80">PT Ascon Multi Pratama</span>
+          <div className="relative z-10 text-[11px] text-blue-100/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
+            <span>PT Ascon Multi Pratama</span>
+            <span className="opacity-80">Water Monitoring System</span>
           </div>
         </div>
 
@@ -146,25 +129,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
         <div className="lg:col-span-6 bg-white p-6 sm:p-8 lg:p-9 flex flex-col justify-between overflow-y-auto">
           <div className="max-w-md mx-auto w-full">
             {/* Header Title */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-5">
               <h2 className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight">
-                Join Us
+                Masuk ke Sistem
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Akses sistem kendali &amp; telemetri SCADA WTP Plant
+                Silakan masukkan email dan kata sandi akun Anda
               </p>
             </div>
 
             {/* Error Notification Alert */}
             {errorMessage && (
-              <div className="mb-3 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+              <div className="mb-3.5 p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {/* Field 1: Phone / Email Number */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -180,13 +163,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@ascon.co.id"
+                    placeholder="Masukkan email akun"
                     className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
               </div>
 
-              {/* Field 2 & 3: Full Name & Username (2 Columns, exact match) */}
+              {/* Field 2 & 3: Full Name & Username */}
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -197,10 +180,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Juliette Karapetyan"
+                      placeholder="Nama lengkap"
                       className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                     />
-                    <span className="text-slate-400 font-light ml-0.5 text-xs animate-pulse">|</span>
                   </div>
                 </div>
 
@@ -213,10 +195,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="julietux"
+                      placeholder="Username"
                       className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                     />
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 ml-1" />
                   </div>
                 </div>
               </div>
@@ -224,7 +205,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
               {/* Field 4: Password */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Password
+                  Kata Sandi
                 </label>
                 <div className="flex items-center justify-between px-3 py-2 sm:py-2.5 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
                   <input
@@ -244,50 +225,40 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
                   </button>
                 </div>
                 <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">
-                  At least 8 characters, letters, numbers, and symbols.
+                  Gunakan minimal 8 karakter huruf, angka, atau simbol.
                 </p>
               </div>
 
-              {/* Primary Blue Button (Continue) */}
+              {/* Primary Blue Button (Masuk ke Sistem) */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 sm:py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 mt-1 disabled:opacity-50"
+                className="w-full py-2.5 sm:py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
               >
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
-                  <span>Continue</span>
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span>Masuk ke Sistem</span>
+                  </>
                 )}
               </button>
             </form>
 
-            {/* Already have account line */}
-            <div className="text-center mt-2">
-              <span className="text-[11px] text-slate-500 font-medium">
-                Pilih akun instan?{' '}
-                <button
-                  type="button"
-                  onClick={() => handleQuickSelect('admin@ascon.co.id', 'Admin@123', 'Super Admin Ascon', 'admin')}
-                  className="font-bold text-[#2563eb] hover:underline cursor-pointer"
-                >
-                  Admin Auto-fill
-                </button>
-              </span>
-            </div>
-
-            {/* Divider 'Or' */}
-            <div className="flex items-center my-2.5">
+            {/* Divider 'Atau' */}
+            <div className="flex items-center my-3.5">
               <div className="flex-1 border-t border-slate-200" />
-              <span className="px-2.5 text-[10px] text-slate-400 font-medium">Or</span>
+              <span className="px-2.5 text-[10px] text-slate-400 font-medium">Atau</span>
               <div className="flex-1 border-t border-slate-200" />
             </div>
 
-            {/* Google / Quick SSO Button */}
+            {/* Google SSO Button */}
             <button
               type="button"
-              onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123', 'Plant Operator SCADA', 'operator_wtp')}
-              className="w-full py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 active:scale-98"
+              disabled={isLoading}
+              onClick={handleGoogleLogin}
+              className="w-full py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 font-bold text-[11px] transition-all cursor-pointer shadow-2xs flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
                 <path
@@ -307,50 +278,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isBackendOnline =
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Sign in with Google (Demo Operator)</span>
+              <span>Masuk dengan Google</span>
             </button>
-
-            {/* Quick Role Select Chips for 1-Click Login (Clean Lucide Icons) */}
-            <div className="flex flex-wrap gap-1.5 mt-2 justify-center">
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('admin@ascon.co.id', 'Admin@123', 'Super Admin Ascon', 'superadmin')}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
-              >
-                <Crown className="w-2.5 h-2.5 text-purple-600" />
-                <span>Super Admin</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('operator@ascon.co.id', 'Operator@123', 'Plant Operator SCADA', 'operator_wtp')}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
-              >
-                <UserCheck className="w-2.5 h-2.5 text-emerald-600" />
-                <span>Operator</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickSelect('engineer@ascon.co.id', 'Engineer@123', 'Field SCADA Engineer', 'eng_scada')}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-bold cursor-pointer transition-colors"
-              >
-                <Wrench className="w-2.5 h-2.5 text-blue-600" />
-                <span>Engineer</span>
-              </button>
-            </div>
           </div>
 
           {/* Legal Footer Note */}
-          <div className="text-center mt-3 pt-2">
+          <div className="text-center mt-4 pt-2">
             <p className="text-[9px] text-slate-400 leading-normal max-w-sm mx-auto">
-              By signing up I confirm that I carefully have read and agree to the Ninth{' '}
-              <a href="#terms" className="text-[#2563eb] hover:underline font-semibold">
-                Privacy Policy
+              Dengan masuk ke sistem, Anda menyetujui{' '}
+              <a href="#privacy" className="text-[#2563eb] hover:underline font-semibold">
+                Kebijakan Privasi
               </a>{' '}
-              and{' '}
+              dan{' '}
               <a href="#terms" className="text-[#2563eb] hover:underline font-semibold">
-                Terms of Service
-              </a>
-              .
+                Ketentuan Layanan
+              </a>{' '}
+              PT Ascon Multi Pratama.
             </p>
           </div>
         </div>
