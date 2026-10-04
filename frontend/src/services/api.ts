@@ -483,6 +483,7 @@ export const api = {
       severity: string
       debounce_seconds?: number
       is_enabled?: boolean
+      description?: string
     }) => request<any>('/api/v1/alarm-rules', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: any) =>
       request<any>(`/api/v1/alarm-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),

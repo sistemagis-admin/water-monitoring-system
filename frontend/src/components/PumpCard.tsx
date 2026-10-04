@@ -1,18 +1,10 @@
 import React from 'react'
 import type { LocationStation } from '../types/pump'
 import {
-  Layers,
   Gauge,
-  Flame,
-  Activity,
-  Zap,
   Droplets,
-  Thermometer,
-  Power,
   Plus,
   Radio,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react'
 
 interface PumpCardProps {
@@ -20,19 +12,6 @@ interface PumpCardProps {
   stationIndex: number
   onToggleMotor: (pumpId: string) => void
   onOpenAddPump?: (areaId: string) => void
-}
-
-const getRoomIcon = (id: string, name: string) => {
-  if (id.includes('01') || name.toLowerCase().includes('intake') || name.toLowerCase().includes('raw')) {
-    return <Layers className="w-4 h-4 text-white" />
-  }
-  if (id.includes('02') || name.toLowerCase().includes('treatment') || name.toLowerCase().includes('filter')) {
-    return <Gauge className="w-4 h-4 text-white" />
-  }
-  if (id.includes('03') || name.toLowerCase().includes('distribution') || name.toLowerCase().includes('booster')) {
-    return <Flame className="w-4 h-4 text-white" />
-  }
-  return <Activity className="w-4 h-4 text-white" />
 }
 
 export const PumpCard: React.FC<PumpCardProps> = ({
@@ -134,9 +113,8 @@ export const PumpCard: React.FC<PumpCardProps> = ({
           </div>
         ) : (
           <div className="space-y-2.5 mb-4">
-            {station.pumps.map((pump, pIdx) => {
+            {station.pumps.map((pump) => {
               const pumpRunning = pump.status === 'RUNNING'
-              const motorIdx = (pIdx % 2) as 0 | 1
 
               return (
                 <div

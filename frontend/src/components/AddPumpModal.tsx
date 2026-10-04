@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import type { AreaRoom, DeviceGateway, AddPumpInput, PumpSubtype } from '../types/pump'
 import { CustomSelect, type SelectOption } from './CustomSelect'
-import { PlusCircle, X, Check, Shield, Layers } from 'lucide-react'
+import { Shield, Layers } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Button } from '@/components/ui/button'
 
 interface AddPumpModalProps {
   isOpen: boolean
@@ -30,7 +40,6 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
   const [ratedFlowM3h, setRatedFlowM3h] = useState(50.0)
   const [ratedPressureBar, setRatedPressureBar] = useState(4.5)
   const [controlEnabled, setControlEnabled] = useState(true)
-  const [isSuccess, setIsSuccess] = useState(false)
 
   useEffect(() => {
     if (initialAreaId) {
@@ -40,26 +49,12 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
     }
   }, [initialAreaId, rooms, isOpen])
 
-  // Prevent background scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
-
-  if (!isOpen) return null
-
   const subtypeOptions: SelectOption[] = [
-    { value: 'MAIN_PUMP', label: 'Main Pump (Intake Utama)' },
-    { value: 'BOOSTER_PUMP', label: 'Booster Pump (Distribusi)' },
-    { value: 'TRANSFER_PUMP', label: 'Transfer Pump (Pemindahan)' },
-    { value: 'HEATER_PUMP', label: 'Heater Pump (Pemanas)' },
-    { value: 'AUXILIARY_PUMP', label: 'Auxiliary (Cadangan)' },
+    { value: 'MAIN_PUMP', label: 'Main Intake Pump' },
+    { value: 'BOOSTER_PUMP', label: 'Distribution Booster Pump' },
+    { value: 'TRANSFER_PUMP', label: 'Transfer Pump' },
+    { value: 'HEATER_PUMP', label: 'Heater Circulation Pump' },
+    { value: 'AUXILIARY_PUMP', label: 'Auxiliary / Standby Pump' },
   ]
 
   const areaOptions: SelectOption[] = rooms.map((r) => ({
@@ -70,21 +65,24 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
 
   const gatewayOptions: SelectOption[] = gateways.map((g) => ({
     value: g.id,
-    label: `${g.code} · ${g.name.replace('Gateway Utama - ', '').replace('Gateway Distribusi - ', '')}`,
-    sublabel: `IP: ${g.ip}`,
+    label: `${g.name} (${g.code})`,
+    sublabel: g.ip,
   }))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !code.trim()) return
+
+    const targetRoom = rooms.find((r) => r.id === areaId)
+    const motorIndex = ((targetRoom?.pumps.length ?? 0) % 2) as 0 | 1
 
     onAddPump({
-      code: code.trim(),
+      code: code.trim().toUpperCase(),
       name: name.trim(),
       subtype,
       areaId,
       deviceId,
-      motorIndex: 0,
+      motorIndex,
       ratedPowerKw: Number(ratedPowerKw),
       ratedFlowM3h: Number(ratedFlowM3h),
       ratedPressureBar: Number(ratedPressureBar),
@@ -94,190 +92,167 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
     onClose()
   }
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-fade-in"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Modal Header */}
-        <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white border-0 rounded-2xl shadow-xl p-6">
+        <DialogHeader className="flex flex-col gap-1 pb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
-              <Layers className="w-5 h-5 text-white" />
+            <div className="size-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
+              <Layers className="size-5" />
             </div>
             <div>
-              <h3 className="font-heading font-semibold text-base text-slate-900 m-0 leading-tight">
-                Tambah Pompa Baru
-              </h3>
-              <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
-                Pendaftaran aset unit pompa air ke ruangan
-              </p>
+              <DialogTitle className="font-heading font-semibold text-base text-slate-900 leading-tight">
+                Add Pump Asset
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 font-normal mt-0.5">
+                Register a new pump unit and configure SCADA telemetry parameters
+              </DialogDescription>
             </div>
           </div>
+        </DialogHeader>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Modal Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
-
-          {/* Row 1: Code & Subtype */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                Kode Asset / Pompa *
-              </label>
-              <input
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs pt-1">
+          {/* Row 1: Code & Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Pump Tag / Code *</label>
+              <Input
                 type="text"
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Contoh: P-07"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
+                placeholder="e.g. P-01"
+                className="font-mono text-xs font-semibold uppercase bg-slate-50 border-slate-200 focus:bg-white"
               />
             </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Pump Equipment Name *</label>
+              <Input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Intake Pump Primary 01"
+                className="text-xs font-medium bg-slate-50 border-slate-200 focus:bg-white"
+              />
+            </div>
+          </div>
 
-            <div>
+          {/* Row 2: Subtype */}
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium text-slate-700">Pump Classification *</label>
+            <CustomSelect
+              options={subtypeOptions}
+              value={subtype}
+              onChange={(val) => setSubtype(val as PumpSubtype)}
+            />
+          </div>
+
+          {/* Row 3: Placement & Gateway */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Plant Station / Area *</label>
               <CustomSelect
-                label="Subtype Pompa"
-                options={subtypeOptions}
-                value={subtype}
-                onChange={(val) => setSubtype(val as PumpSubtype)}
-                colorTheme="blue"
+                options={areaOptions}
+                value={areaId}
+                onChange={setAreaId}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">IoT Telemetry Gateway *</label>
+              <CustomSelect
+                options={gatewayOptions}
+                value={deviceId}
+                onChange={setDeviceId}
               />
             </div>
           </div>
 
-          {/* Row 2: Name */}
-          <div>
-            <label className="block font-medium text-slate-700 mb-1">
-              Nama Lengkap Pompa *
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Pump 07 (Booster Reserve)"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
-            />
-          </div>
-
-          {/* Row 3: Area Assignment */}
-          <div>
-            <CustomSelect
-              label="Ruangan / Area Lokasi"
-              options={areaOptions}
-              value={areaId}
-              onChange={(val) => setAreaId(val)}
-              colorTheme="blue"
-            />
-          </div>
-
-          {/* Row 4: Gateway IoT Source */}
-          <div>
-            <CustomSelect
-              label="Gateway IoT / PLC Source"
-              options={gatewayOptions}
-              value={deviceId}
-              onChange={(val) => setDeviceId(val)}
-              colorTheme="blue"
-            />
-          </div>
-
-          {/* Row 5: Technical Rating */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <span className="block font-semibold text-slate-800 text-xs">
-              Spesifikasi Desain &amp; Kapasitas
+          {/* Row 4: Specifications */}
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-2">
+            <span className="font-semibold text-slate-800 text-xs">
+              Design Specifications &amp; Nameplate Ratings
             </span>
             <div className="grid grid-cols-3 gap-2.5">
-              <div>
-                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
-                  Daya (kW)
+              <div className="flex flex-col gap-1">
+                <label className="font-normal text-[11px] text-slate-500">
+                  Rated Power (kW)
                 </label>
-                <input
+                <Input
                   type="number"
                   step="0.1"
                   value={ratedPowerKw}
                   onChange={(e) => setRatedPowerKw(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-medium text-slate-900 focus:border-[#00799e] outline-hidden"
+                  className="font-mono text-xs font-medium bg-white"
                 />
               </div>
-              <div>
-                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
-                  Debit (m³/h)
+              <div className="flex flex-col gap-1">
+                <label className="font-normal text-[11px] text-slate-500">
+                  Rated Flow (m³/h)
                 </label>
-                <input
+                <Input
                   type="number"
                   step="0.1"
                   value={ratedFlowM3h}
                   onChange={(e) => setRatedFlowM3h(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-medium text-slate-900 focus:border-[#00799e] outline-hidden"
+                  className="font-mono text-xs font-medium bg-white"
                 />
               </div>
-              <div>
-                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
-                  Tekanan (bar)
+              <div className="flex flex-col gap-1">
+                <label className="font-normal text-[11px] text-slate-500">
+                  Rated Head (bar)
                 </label>
-                <input
+                <Input
                   type="number"
                   step="0.1"
                   value={ratedPressureBar}
                   onChange={(e) => setRatedPressureBar(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-medium text-slate-900 focus:border-[#00799e] outline-hidden"
+                  className="font-mono text-xs font-medium bg-white"
                 />
               </div>
             </div>
           </div>
 
-          {/* Row 6: Capability Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-[#00799e]" />
+          {/* Row 5: Capability Toggle with shadcn Switch */}
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-2.5">
+              <Shield className="size-4 text-[#00799e]" />
               <div>
-                <span className="block font-medium text-slate-800">
-                  Aktifkan Kontrol Remote
+                <span className="block font-medium text-slate-800 text-xs">
+                  Enable Remote Motor Control
                 </span>
                 <span className="text-[11px] text-slate-500 font-normal">
-                  Izinkan operator mengirim perintah start/stop dari sistem
+                  Allow authorized operators to trigger start / stop commands from SCADA
                 </span>
               </div>
             </div>
-            <input
-              type="checkbox"
+            <Switch
               checked={controlEnabled}
-              onChange={(e) => setControlEnabled(e.target.checked)}
-              className="w-4 h-4 accent-[#00799e] rounded cursor-pointer"
+              onCheckedChange={setControlEnabled}
             />
           </div>
 
           {/* Modal Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2">
-            <button
+          <DialogFooter className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="text-xs font-medium text-slate-600 active:scale-[0.975] transition-transform duration-150"
             >
-              Batal
-            </button>
-            <button
+              Cancel
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] active:scale-95 transition-all cursor-pointer shadow-xs"
+              size="sm"
+              className="text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] shadow-xs active:scale-[0.975] transition-transform duration-150"
             >
-              Simpan Pompa
-            </button>
-          </div>
+              Save Pump Asset
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   )
 }

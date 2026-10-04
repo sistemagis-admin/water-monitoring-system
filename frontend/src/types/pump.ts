@@ -37,7 +37,9 @@ export interface LocationStation {
   baseFlow: number
   motors: number[]
   color: string
-  tankLevel: number
+  tankLevel?: number
+  hasTank?: boolean
+  tankCapacityL?: number
   pumps: PumpAsset[]
   pressure: number
   flowRate: number
@@ -95,6 +97,8 @@ export type SensorType =
   | 'TEMPERATURE_SENSOR'
   | 'CURRENT_SENSOR'
   | 'VIBRATION_SENSOR'
+  | 'POWER_METER'
+  | 'VOLTAGE_SENSOR'
   | 'OTHER'
 
 export interface SensorItem {

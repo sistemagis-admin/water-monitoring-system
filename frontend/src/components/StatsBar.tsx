@@ -9,24 +9,24 @@ interface StatsBarProps {
 
 export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
   return (
-    <section className="grid grid-cols-2 md:grid-cols-5 bg-white border border-slate-200 rounded-[20px] mb-5 overflow-hidden divide-x divide-y md:divide-y-0 divide-slate-200 shadow-xs">
+    <section className="grid grid-cols-2 md:grid-cols-5 bg-white rounded-2xl mb-5 overflow-hidden divide-x divide-y md:divide-y-0 divide-slate-100 shadow-xs">
       {/* 1. Area / Room Coverage */}
       <div className="p-3.5 sm:px-4 sm:py-3.5">
         <small className="block text-xs font-semibold text-slate-500 mb-1">
-          Area Terpantau
+          Monitored Stations
         </small>
         <div className="flex items-baseline gap-1.5">
           <b className="font-heading font-extrabold text-2xl sm:text-[26px] tabular-nums text-slate-900">
             {stats.totalAreas}
           </b>
-          <span className="text-xs font-medium text-slate-500">Ruangan</span>
+          <span className="text-xs font-medium text-slate-500">Stations</span>
         </div>
       </div>
 
       {/* 2. IoT Gateways */}
       <div className="p-3.5 sm:px-4 sm:py-3.5">
         <small className="block text-xs font-semibold text-slate-500 mb-1 flex items-center justify-between">
-          <span>Gateway IoT</span>
+          <span>IoT Gateways</span>
           <span className={`w-2 h-2 rounded-full ${stats.onlineDevices > 0 ? 'bg-emerald-600' : 'bg-slate-300'}`} />
         </small>
         <div className="flex items-baseline gap-1.5">
@@ -42,14 +42,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
       {/* 3. Pump Running Count */}
       <div className="p-3.5 sm:px-4 sm:py-3.5">
         <small className="block text-xs font-semibold text-slate-500 mb-1">
-          Pompa Beroperasi
+          Operating Pumps
         </small>
         <div className="flex items-baseline gap-1.5">
           <b className="font-heading font-extrabold text-2xl sm:text-[26px] tabular-nums text-slate-900">
             {stats.runningPumps}
           </b>
           <span className="text-xs font-medium text-slate-500">
-            dari {stats.totalPumps} Pompa
+            / {stats.totalPumps} Installed
           </span>
         </div>
       </div>
@@ -57,14 +57,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
       {/* 4. Average Pressure & Flow */}
       <div className="p-3.5 sm:px-4 sm:py-3.5">
         <small className="block text-xs font-semibold text-slate-500 mb-1">
-          Rata-rata Tekanan &amp; Debit
+          Avg Pressure &amp; Total Flow
         </small>
         <div className="flex items-baseline gap-1.5">
           <b className="font-heading font-extrabold text-xl sm:text-[24px] tabular-nums text-slate-900">
             {stats.avgPressure.toFixed(2)}
           </b>
           <span className="text-xs font-mono font-bold text-slate-500">bar</span>
-          <span className="text-xs font-mono font-semibold text-[var(--amp-teal)] ml-1">
+          <span className="text-xs font-mono font-semibold text-[#00799e] ml-1">
             · {stats.totalFlow} m³/h
           </span>
         </div>
@@ -76,7 +76,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
         className="p-3.5 sm:px-4 sm:py-3.5 cursor-pointer hover:bg-slate-50 transition-colors"
       >
         <small className="block text-xs font-semibold text-slate-500 mb-1 flex items-center justify-between">
-          <span>Status Alarm</span>
+          <span>Alarm Status</span>
           {stats.activeAlarms > 0 ? (
             <AlertOctagon className="w-3.5 h-3.5 text-red-600" />
           ) : (
@@ -96,7 +96,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
               stats.activeAlarms > 0 ? 'text-red-600' : 'text-emerald-600'
             }`}
           >
-            {stats.activeAlarms > 0 ? 'Perlu Respon' : 'Sistem Normal'}
+            {stats.activeAlarms > 0 ? 'Action Required' : 'Normal'}
           </span>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   Lock,
   LogIn,
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface LoginPageProps {
   onLogin: (credentials: { email: string; password: string }) => Promise<{ success: boolean; error?: string }>
@@ -37,7 +38,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const inputPass = password.trim()
 
     if (!inputEmail || !inputPass) {
-      setErrorMessage('Silakan masukkan email dan kata sandi Anda.')
+      setErrorMessage('Please enter both your email address and password.')
       return
     }
 
@@ -47,16 +48,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     try {
       const result = await onLogin({ email: inputEmail, password: inputPass })
       if (!result.success) {
-        let errText = result.error || 'Email atau kata sandi tidak sesuai. Silakan coba kembali.'
+        let errText = result.error || 'Invalid credentials. Please verify your email and password.'
         if (errText.includes('AUTH_INVALID_CREDENTIAL') || errText.includes('Invalid email or password')) {
-          errText = 'Email atau kata sandi tidak terdaftar/salah. Gunakan akun terdaftar di sistem (misal: admin@ascon.co.id / Admin@123).'
+          errText = 'Invalid email or password. Please verify credentials (e.g. admin@ascon.co.id / Admin@123).'
         } else if (errText.includes('Invalid email address') || errText.includes('invalid_string')) {
-          errText = 'Format email tidak valid. Pastikan format email benar (contoh: admin@ascon.co.id).'
+          errText = 'Invalid email format. Please check the email format (e.g. admin@ascon.co.id).'
         }
         setErrorMessage(errText)
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal terhubung ke server backend (192.168.100.6:3000).')
+      setErrorMessage(err.message || 'Unable to connect to Fastify SCADA backend.')
     } finally {
       setIsLoading(false)
     }
@@ -65,7 +66,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   return (
     <div className="h-screen max-h-screen w-screen overflow-hidden bg-white sm:bg-slate-50 flex items-center justify-center p-3 sm:p-4 lg:p-6 select-none">
       {/* Main Floating Rounded Card */}
-      <div className="w-full max-w-[960px] max-h-[96vh] sm:max-h-[90vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
+      <div className="w-full max-w-[960px] max-h-[96vh] sm:max-h-[90vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12">
         
         {/* ======================================================== */}
         {/* LEFT COLUMN: Deep Teal Atmospheric Panel (#00799e) */}
@@ -89,16 +90,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           {/* Main Content Area (Headline & Description) */}
           <div className="my-auto py-8 relative z-10">
             <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.2] mb-3.5">
-              Sistem Monitoring &amp; Kendali Pompa Air
+              Water SCADA &amp; Telemetry System
             </h1>
             <p className="text-xs sm:text-sm text-[#e0f3f8]/90 font-medium leading-relaxed max-w-md">
-              Platform telemetri terintegrasi untuk pemantauan level tangki, debit aliran pipa, tekanan distribusi, dan status operasional pompa secara real-time.
+              Integrated industrial supervisory platform for real-time reservoir levels, flow distribution rates, discharge pressure, and pump motor automation.
             </p>
           </div>
 
           {/* Footer note inside left panel */}
           <div className="relative z-10 text-[11px] text-[#e0f3f8]/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
-            <span>PT Ascon Multi Pratama</span>
+            <span>PT. Ascon Multipratama</span>
             <span className="opacity-80">Water Monitoring System</span>
           </div>
         </div>
@@ -111,10 +112,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             {/* Header Title */}
             <div className="text-center mb-6">
               <h2 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight">
-                Masuk ke Sistem
+                Sign In to SCADA
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
-                Silakan masukkan email dan kata sandi akun Anda
+                Enter your credentials to access system telemetry
               </p>
             </div>
 
@@ -131,7 +132,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Field 1: Email */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                  Email
+                  Email Address
                 </label>
                 <div className="flex items-center px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#00799e] focus-within:ring-2 focus-within:ring-[#00799e]/20 transition-all">
                   <Mail className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
@@ -140,16 +141,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@ascon.co.id"
+                    placeholder="admin@ascon.co.id"
                     className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
               </div>
 
-              {/* Field 2: Kata Sandi */}
+              {/* Field 2: Password */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
-                  Kata Sandi
+                  Password
                 </label>
                 <div className="flex items-center justify-between px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#00799e] focus-within:ring-2 focus-within:ring-[#00799e]/20 transition-all">
                   <div className="flex items-center flex-1 mr-2">
@@ -174,35 +175,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </div>
 
               {/* Primary Teal Button (#00799e) */}
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-[#00799e] hover:bg-[#006887] active:bg-[#005872] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-[#00799e]/25 active:scale-98 flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                className="w-full h-11 rounded-xl bg-[#00799e] hover:bg-[#006887] active:bg-[#005872] active:scale-[0.985] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-[#00799e]/25 flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
               >
                 {isLoading ? (
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <LogIn className="w-4 h-4" />
-                    <span>Masuk ke Sistem</span>
+                    <LogIn className="size-4" />
+                    <span>Sign In to SCADA</span>
                   </>
                 )}
-              </button>
+              </Button>
             </form>
           </div>
 
           {/* Legal Footer Note */}
           <div className="text-center mt-6 pt-2">
             <p className="text-[10px] text-slate-400 leading-normal max-w-sm mx-auto">
-              Dengan masuk ke sistem, Anda menyetujui{' '}
-              <a href="#privacy" className="text-[#00799e] hover:underline font-semibold">
-                Kebijakan Privasi
-              </a>{' '}
-              dan{' '}
-              <a href="#terms" className="text-[#00799e] hover:underline font-semibold">
-                Ketentuan Layanan
-              </a>{' '}
-              PT Ascon Multi Pratama.
+              Protected industrial SCADA telemetry terminal. Authorized personnel access only.
             </p>
           </div>
         </div>

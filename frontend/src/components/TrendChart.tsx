@@ -25,7 +25,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
 
   if (!stations || stations.length === 0 || totalPumps === 0) {
     return (
-      <section className="bg-white border border-slate-200 rounded-[22px] p-8 shadow-xs text-center flex flex-col items-center justify-center text-slate-400">
+      <section className="bg-white rounded-2xl p-8 shadow-xs text-center flex flex-col items-center justify-center text-slate-400">
         <Activity className="w-8 h-8 text-slate-400 mb-2" />
         <p className="font-bold text-sm text-slate-700 m-0">Grafik Telemetri Standby</p>
         <span className="text-xs text-slate-500 max-w-md">
@@ -36,7 +36,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
   }
 
   return (
-    <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-5 sm:p-6 shadow-xs transition-all">
+    <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs transition-all">
       {/* Chart Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>

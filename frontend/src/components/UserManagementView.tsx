@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import type { SystemUserItem } from '../types/pump'
 import { api, type ApiUser } from '../services/api'
 import { useToast } from '../context/ToastContext'
-import { CustomSelect, type SelectOption } from './CustomSelect'
+import { CustomSelect } from './CustomSelect'
 import {
   Users,
   UserPlus,
@@ -25,6 +24,36 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 
 interface UserManagementViewProps {
   currentUser?: ApiUser | null
@@ -58,8 +87,8 @@ const ROLE_OPTIONS: RoleOption[] = [
     badgeTextCol: 'text-emerald-700',
     activeBorder: 'border-emerald-500',
     activeBg: 'bg-emerald-50/60',
-    desc: 'Kontrol saklar pompa on/off, monitoring telemetri real-time, dan akui notifikasi alarm.',
-    level: 'Operasional SCADA',
+    desc: 'Pump motor start/stop control, real-time telemetry monitoring, and alarm acknowledgement.',
+    level: 'Field Operations',
   },
   {
     id: 'ENGINEER',
@@ -71,8 +100,8 @@ const ROLE_OPTIONS: RoleOption[] = [
     badgeTextCol: 'text-[#00799e]',
     activeBorder: 'border-[#00799e]',
     activeBg: 'bg-[#00799e]/10',
-    desc: 'Kalibrasi sensor, konfigurasi gateway IoT, dan penyesuaian aturan threshold alarm.',
-    level: 'Teknis & Kalibrasi',
+    desc: 'Sensor calibration, IoT gateway configuration, and alarm threshold tuning.',
+    level: 'Engineering & Calibration',
   },
   {
     id: 'SUPER_ADMIN',
@@ -84,8 +113,8 @@ const ROLE_OPTIONS: RoleOption[] = [
     badgeTextCol: 'text-amber-500',
     activeBorder: 'border-slate-900',
     activeBg: 'bg-slate-100',
-    desc: 'Akses penuh administrasi sistem, manajemen akun pengguna, dan seluruh kontrol stasiun.',
-    level: 'Akses Master',
+    desc: 'Full administrative access, user account management, and station configuration.',
+    level: 'Root Administrator',
   },
   {
     id: 'VIEWER',
@@ -97,8 +126,8 @@ const ROLE_OPTIONS: RoleOption[] = [
     badgeTextCol: 'text-slate-600',
     activeBorder: 'border-slate-400',
     activeBg: 'bg-slate-50',
-    desc: 'Hanya dapat memantau grafik dashboard dan riwayat telemetri tanpa kontrol operasi.',
-    level: 'Hanya Lihat (Read-Only)',
+    desc: 'Read-only telemetry trends, live status viewing, and historical log auditing.',
+    level: 'Read-Only Audit',
   },
 ]
 
@@ -116,139 +145,139 @@ interface PermissionItem {
 }
 
 const PERMISSIONS_DATA: PermissionItem[] = [
-  // 1. Operasional SCADA & Kontrol Pompa
+  // 1. SCADA Operations
   {
     id: 'p_pump_toggle',
-    module: 'Operasional SCADA',
-    name: 'Saklar Pompa Manual (Start / Stop)',
-    desc: 'Menyalakan dan mematikan unit pompa motor secara manual via web SCADA.',
+    module: 'SCADA Operations',
+    name: 'Manual Pump Start / Stop Switch',
+    desc: 'Start and stop motor pump units manually via web SCADA interface.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_estop',
-    module: 'Operasional SCADA',
-    name: 'Emergency Stop Stasiun',
-    desc: 'Mematikan seketika seluruh unit pompa darurat jika terjadi anomali kritis.',
+    module: 'SCADA Operations',
+    name: 'Emergency Station Stop',
+    desc: 'Instantly shut down all station pumps upon critical conditions.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_reset',
-    module: 'Operasional SCADA',
-    name: 'Reset Status Trip & Overload',
-    desc: 'Mereset status proteksi pompa setelah gangguan mekanik diatasi.',
+    module: 'SCADA Operations',
+    name: 'Reset Trip & Overload State',
+    desc: 'Clear pump protective lockouts once electrical or mechanical issues are resolved.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_vfd',
-    module: 'Operasional SCADA',
-    name: 'Override Kecepatan VFD & Setpoint',
-    desc: 'Mengubah frekuensi Hz inverter pompa dan target tekanan pipa.',
+    module: 'SCADA Operations',
+    name: 'VFD Speed & Pressure Setpoints',
+    desc: 'Adjust inverter output frequency and discharge manifold target pressure.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
 
-  // 2. Telemetri & Visualisasi
+  // 2. Telemetry & Sensors
   {
     id: 'p_telem_view',
-    module: 'Telemetri & Sensor',
-    name: 'Monitoring Grafik & Live Data',
-    desc: 'Melihat grafik tekanan, debit aliran, arus listrik, dan temperatur real-time.',
+    module: 'Telemetry & Sensors',
+    name: 'Live Telemetry & Trend Graphs',
+    desc: 'View real-time discharge pressure, flow rate, active load, and temperature.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: true },
   },
   {
     id: 'p_telem_export',
-    module: 'Telemetri & Sensor',
-    name: 'Export Laporan Telemetri (PDF/CSV)',
-    desc: 'Mengunduh log riwayat telemetri dan rekap operasional pompa.',
+    module: 'Telemetry & Sensors',
+    name: 'Export Telemetry Reports (PDF/CSV)',
+    desc: 'Download historical logging summaries and pump operational records.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: true },
   },
   {
     id: 'p_sensor_calibrate',
-    module: 'Telemetri & Sensor',
-    name: 'Kalibrasi & Dynamic Sensor Binding',
-    desc: 'Menyesuaikan offset nilai sensor dan konfigurasi port analog/digital.',
+    module: 'Telemetry & Sensors',
+    name: 'Calibration & Dynamic Sensor Binding',
+    desc: 'Configure sensor zero/span offsets and input signal channel mapping.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
 
-  // 3. Pusat Alarm & Proteksi
+  // 3. Alarm Center
   {
     id: 'p_alarm_view',
-    module: 'Pusat Alarm',
-    name: 'Memantau Log Alarm Masuk',
-    desc: 'Melihat status alarm terbuka, acknowledged, dan riwayat notifikasi.',
+    module: 'Alarm Center',
+    name: 'View Active Alarms & Events',
+    desc: 'Inspect open, acknowledged, and resolved alarm records.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: true },
   },
   {
     id: 'p_alarm_ack',
-    module: 'Pusat Alarm',
-    name: 'Mengakui Alarm (Acknowledge)',
-    desc: 'Mengonfirmasi bahwa alarm telah disadari oleh petugas jaga.',
+    module: 'Alarm Center',
+    name: 'Acknowledge Active Alarms',
+    desc: 'Record operator awareness and assign acknowledgement ownership.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_alarm_resolve',
-    module: 'Pusat Alarm',
-    name: 'Menyelesaikan Alarm (Resolve & Catatan)',
-    desc: 'Menutup status alarm dan menuliskan log tindakan mitigasi.',
+    module: 'Alarm Center',
+    name: 'Resolve & Clear Alarm Events',
+    desc: 'Close active alarm conditions with documented resolution notes.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_alarm_rules',
-    module: 'Pusat Alarm',
-    name: 'Kelola Aturan Threshold & Debounce',
-    desc: 'Tambah, edit nilai batas kritis, dan atur waktu proteksi anti-flicker.',
+    module: 'Alarm Center',
+    name: 'Manage Trip Rules & Debounce',
+    desc: 'Create and modify trip thresholds and anti-flicker delay timers.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
 
-  // 4. Konfigurasi Aset & IoT Gateway
+  // 4. Asset Configuration
   {
     id: 'p_asset_area',
-    module: 'Konfigurasi Aset',
-    name: 'Manajemen Area & Ruangan Stasiun',
-    desc: 'Menambah, mengubah kapasitas m³/jam, dan menghapus master ruangan.',
+    module: 'Asset Configuration',
+    name: 'Station & Area Management',
+    desc: 'Create, modify, and delete plant stations and rated discharge capacities.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
   {
     id: 'p_asset_pump',
-    module: 'Konfigurasi Aset',
-    name: 'Registrasi Pompa & Spesifikasi Teknis',
-    desc: 'Menambah aset pompa baru, daya kW, debit m³/h, dan head bar.',
+    module: 'Asset Configuration',
+    name: 'Pump Asset Registration',
+    desc: 'Register centrifugal pump assets, rated motor kW, and flow specifications.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
   {
     id: 'p_device_gateway',
-    module: 'Konfigurasi Aset',
-    name: 'Manajemen Gateway IoT & Modbus RTU',
-    desc: 'Konfigurasi IP, port RS485, baudrate, dan interval polling gateway.',
+    module: 'Asset Configuration',
+    name: 'IoT Gateway Node Management',
+    desc: 'Configure IP addresses, MQTT telemetry topics, and heartbeat intervals.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
   },
 
-  // 5. Manajemen Pengguna & Keamanan
+  // 5. Security & RBAC
   {
     id: 'p_user_view',
-    module: 'Keamanan & Akun',
-    name: 'Melihat Daftar Pengguna Terdaftar',
-    desc: 'Melihat identitas, email, dan riwayat login operator/engineer.',
+    module: 'Security & RBAC',
+    name: 'View Registered Users',
+    desc: 'View operator and engineer user accounts and session timestamps.',
     roles: { SUPER_ADMIN: true, ENGINEER: false, OPERATOR: false, VIEWER: false },
   },
   {
     id: 'p_user_manage',
-    module: 'Keamanan & Akun',
-    name: 'Tambah & Edit Akun Pengguna',
-    desc: 'Mendaftarkan operator baru dan mengubah status akun aktif/nonaktif.',
+    module: 'Security & RBAC',
+    name: 'Create & Update Accounts',
+    desc: 'Register system accounts and modify active status privileges.',
     roles: { SUPER_ADMIN: true, ENGINEER: false, OPERATOR: false, VIEWER: false },
   },
   {
     id: 'p_user_role',
-    module: 'Keamanan & Akun',
-    name: 'Penetapan Role & Hak Akses (RBAC)',
-    desc: 'Memberikan level otoritas Super Admin, Engineer, Operator, atau Viewer.',
+    module: 'Security & RBAC',
+    name: 'Role & Permission Assignment',
+    desc: 'Assign Super Admin, Engineer, Operator, or Viewer authorization roles.',
     roles: { SUPER_ADMIN: true, ENGINEER: false, OPERATOR: false, VIEWER: false },
   },
   {
     id: 'p_user_delete',
-    module: 'Keamanan & Akun',
-    name: 'Hapus & Cabut Akses Akun',
-    desc: 'Menghapus permanen akun pengguna dari database sistem.',
+    module: 'Security & RBAC',
+    name: 'Delete & Revoke User Accounts',
+    desc: 'Permanently revoke user access and remove authentication records.',
     roles: { SUPER_ADMIN: true, ENGINEER: false, OPERATOR: false, VIEWER: false },
   },
 ]
@@ -401,7 +430,12 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!addEmail.trim() || !addFullName.trim() || !addPassword.trim()) {
-      toast.error('Form Tidak Lengkap', 'Harap isi semua kolom pendaftaran akun.')
+      toast.error('Incomplete Form', 'Please fill in all registration fields.')
+      return
+    }
+
+    if (addPassword.length < 6) {
+      toast.error('Password Too Short', 'Password must be at least 6 characters.')
       return
     }
 
@@ -414,11 +448,17 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
           password: addPassword,
           role: addRole,
         })
-        if (res?.success && res.data?.id) {
+        if (!res?.success) {
+          const errMsg = res?.error?.message || 'Failed to register account on server.'
+          toast.error('Failed to Create User', errMsg)
+          return
+        }
+        if (res.data?.id) {
           createdId = res.data.id
         }
-      } catch (err) {
-        console.warn('Backend user create error:', err)
+      } catch (err: any) {
+        toast.error('Failed to Create User', err?.message || 'Connection error to Fastify server.')
+        return
       }
     }
 
@@ -429,8 +469,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
       role: addRole,
       status: 'ACTIVE',
       siteName: 'WTP Plant Bandung',
-      createdAt: new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
-      lastLogin: 'Baru Dibuat',
+      createdAt: new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }),
+      lastLogin: 'Never',
     }
 
     setUsers((prev) => [newUser, ...prev])
@@ -438,7 +478,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     setAddEmail('')
     setAddFullName('')
     setAddPassword('')
-    toast.success('User Berhasil Dibuat', `Akun ${newUser.fullName} (${newUser.role}) telah terdaftar.`)
+    toast.success('User Created', `Account for ${newUser.fullName} (${newUser.role}) has been registered.`)
   }
 
   // Handle Edit User
@@ -458,7 +498,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
         .update(editingUser.id, {
           full_name: editFullName,
           role: editRole,
-          is_active: editStatus === 'ACTIVE',
+          status: editStatus,
         })
         .catch(console.warn)
     }
@@ -472,7 +512,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     )
 
     setEditingUser(null)
-    toast.info('Data User Diperbarui', `Akun ${editFullName} telah diperbarui.`)
+    toast.info('User Updated', `Account for ${editFullName} has been updated.`)
   }
 
   // Handle Delete User
@@ -482,7 +522,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
       api.users.delete(deleteCandidate.id).catch(console.warn)
     }
     setUsers((prev) => prev.filter((u) => u.id !== deleteCandidate.id))
-    toast.warning('User Dinonaktifkan', `Akun ${deleteCandidate.fullName} telah dihapus.`)
+    toast.warning('User Deleted', `Account for ${deleteCandidate.fullName} has been removed.`)
     setDeleteCandidate(null)
   }
 
@@ -490,157 +530,191 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
     switch (role) {
       case 'SUPER_ADMIN':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white inline-flex items-center gap-1 shadow-2xs font-mono">
-            <ShieldAlert className="w-3 h-3 text-amber-400" />
+          <Badge className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900 text-white inline-flex items-center gap-1 shadow-2xs font-mono border-0">
+            <ShieldAlert className="size-3 text-amber-400" />
             SUPER ADMIN
-          </span>
+          </Badge>
         )
       case 'ENGINEER':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#00799e] text-white inline-flex items-center gap-1 shadow-2xs font-mono">
-            <ShieldCheck className="w-3 h-3 text-cyan-200" />
+          <Badge className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#00799e] hover:bg-[#00799e] text-white inline-flex items-center gap-1 shadow-2xs font-mono border-0">
+            <ShieldCheck className="size-3 text-cyan-200" />
             ENGINEER
-          </span>
+          </Badge>
         )
       case 'OPERATOR':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white inline-flex items-center gap-1 shadow-2xs font-mono">
-            <Shield className="w-3 h-3 text-white" />
+          <Badge className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 hover:bg-emerald-600 text-white inline-flex items-center gap-1 shadow-2xs font-mono border-0">
+            <Shield className="size-3 text-white" />
             OPERATOR
-          </span>
+          </Badge>
         )
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 inline-flex items-center gap-1 font-mono">
-            <Eye className="w-3 h-3 text-slate-500" />
+          <Badge variant="outline" className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border-slate-200 inline-flex items-center gap-1 font-mono">
+            <Eye className="size-3 text-slate-500" />
             VIEWER
-          </span>
+          </Badge>
         )
     }
   }
 
   return (
     <div className="space-y-5 animate-fade-in select-none">
-      {/* 1. Header Bar with Unified Subtab Switcher */}
+      {/* 1. SCADA RBAC Access Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading font-semibold text-xl sm:text-2xl text-slate-800 tracking-tight leading-none">
-            Manajemen Pengguna &amp; Hak Akses
-          </h1>
-          <p className="text-xs text-slate-500 font-normal mt-1.5 m-0">
-            Kelola akun operator, tim teknis engineer, dan matriks otorisasi kontrol SCADA
-          </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-mono font-medium shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 led-pulse-emerald"></span>
+            <span className="tracking-wider text-[11px]">ACCESS CONTROL &amp; RBAC</span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-600 text-xs font-mono shadow-2xs">
+            <span className="text-slate-400">TOTAL:</span>
+            <span className="font-bold text-slate-800">{users.length} REGISTERED</span>
+            <span className="text-slate-300">|</span>
+            <span className="text-emerald-600 font-bold">
+              {users.filter((u) => u.status === 'ACTIVE').length} ACTIVE
+            </span>
+          </div>
         </div>
 
         {/* View Switcher Capsule & Action Button */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('users')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeSubTab === 'users'
-                  ? 'bg-white text-[#00799e] font-semibold shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Daftar Pengguna ({users.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveSubTab('permissions')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                activeSubTab === 'permissions'
-                  ? 'bg-white text-[#00799e] font-semibold shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Key className="w-3.5 h-3.5" />
-              <span>Role &amp; Hak Akses (RBAC)</span>
-            </button>
-          </div>
+          <Tabs
+            value={activeSubTab}
+            onValueChange={(val) => setActiveSubTab(val as 'users' | 'permissions')}
+            className="w-auto"
+          >
+            <TabsList className="bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 h-auto">
+              <TabsTrigger
+                value="users"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-[#00799e] data-[state=active]:font-semibold data-[state=active]:shadow-2xs gap-1.5 cursor-pointer"
+              >
+                <Users className="size-3.5" />
+                <span>User Accounts ({users.length})</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="permissions"
+                className="px-3 py-1.5 rounded-lg text-xs font-medium data-[state=active]:bg-white data-[state=active]:text-[#00799e] data-[state=active]:font-semibold data-[state=active]:shadow-2xs gap-1.5 cursor-pointer"
+              >
+                <Key className="size-3.5" />
+                <span>Role Permissions Matrix</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
 
           {activeSubTab === 'users' && (
-            <button
+            <Button
               type="button"
               onClick={() => setIsAddOpen(true)}
-              className="px-4 py-2 bg-[#00799e] hover:bg-[#006887] text-white text-xs font-semibold rounded-xl shadow-sm shadow-[#00799e]/20 flex items-center gap-1.5 cursor-pointer transition-all"
+              className="h-8 px-4 bg-[#00799e] hover:bg-[#006887] text-white text-xs font-semibold rounded-xl shadow-xs gap-1.5 cursor-pointer"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Tambah User Baru</span>
-            </button>
+              <UserPlus className="size-3.5" />
+              <span>Add User</span>
+            </Button>
           )}
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* SUBTAB 1: DAFTAR PENGGUNA (USER MANAGEMENT)                                */}
+      {/* SUBTAB 1: USER ACCOUNTS                                                    */}
       {/* ========================================================================= */}
       {activeSubTab === 'users' && (
-        <div className="space-y-5 animate-fade-in">
+        <div className="space-y-4 animate-fade-in">
           {/* Top Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block">Total Pengguna</span>
-                <span className="font-heading font-bold text-2xl sm:text-3xl text-slate-800 block mt-0.5">
-                  {users.length} <span className="text-xs font-normal text-slate-400">Akun</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 mb-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500">
+                  TOTAL USERS
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="my-1">
+                <span className="font-mono tabular-nums font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight">
+                  {users.length}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center">
-                <Users className="w-5 h-5" />
+              <div className="text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span>DIRECTORY:</span>
+                <span className="font-semibold text-slate-700">SYSTEM DB</span>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block">Super Admin &amp; Lead</span>
-                <span className="font-heading font-bold text-2xl sm:text-3xl text-slate-800 block mt-0.5">
+            <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 mb-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500">
+                  SUPER ADMIN
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="my-1">
+                <span className="font-mono tabular-nums font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight">
                   {users.filter((u) => u.role === 'SUPER_ADMIN').length}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
-                <ShieldAlert className="w-5 h-5 text-amber-400" />
+              <div className="text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span>LEVEL:</span>
+                <span className="font-semibold text-amber-600">MASTER ACCESS</span>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block">Operator &amp; Engineer</span>
-                <span className="font-heading font-bold text-2xl sm:text-3xl text-slate-800 block mt-0.5">
+            <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 mb-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500">
+                  FIELD OPERATIONS
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="my-1">
+                <span className="font-mono tabular-nums font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight">
                   {users.filter((u) => u.role === 'OPERATOR' || u.role === 'ENGINEER').length}
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
+              <div className="text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span>OPERATIONS:</span>
+                <span className="font-semibold text-emerald-600">CERTIFIED</span>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex items-center justify-between">
-              <div>
-                <span className="text-[11px] font-medium text-slate-400 block">Status Aktif</span>
-                <span className="font-heading font-bold text-2xl sm:text-3xl text-emerald-600 block mt-0.5">
-                  {users.filter((u) => u.status === 'ACTIVE').length} / {users.length}
+            <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+              <div className="flex items-center justify-between text-slate-400 mb-1.5">
+                <span className="text-[10px] font-mono uppercase tracking-wider font-semibold text-slate-500">
+                  ACTIVE USERS
+                </span>
+                <div className="w-8 h-8 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="my-1">
+                <span className="font-mono tabular-nums font-bold text-2xl sm:text-3xl text-emerald-600 tracking-tight">
+                  {users.filter((u) => u.status === 'ACTIVE').length}{' '}
+                  <span className="text-xs font-normal text-slate-400">/ {users.length}</span>
                 </span>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center">
-                <CheckCircle2 className="w-5 h-5" />
+              <div className="text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100 flex items-center justify-between">
+                <span>SECURITY:</span>
+                <span className="font-semibold text-emerald-600">NOMINAL</span>
               </div>
             </div>
           </div>
 
           {/* Search & Sleek Role Filter Pills */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs">
             <div className="relative flex-1 min-w-[240px]">
               <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
+              <Input
                 type="text"
-                placeholder="Cari pengguna berdasarkan nama atau email..."
+                placeholder="Search users by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#00799e] focus:bg-white outline-hidden transition-all font-normal"
+                className="pl-9 pr-4 py-2 bg-slate-50 border-slate-200/80 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#00799e] h-9"
               />
             </div>
 
@@ -649,18 +723,18 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               <button
                 type="button"
                 onClick={() => setRoleFilter('ALL')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors duration-150 ease-out active:scale-[0.975] ${
                   roleFilter === 'ALL'
                     ? 'bg-slate-800 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
                 }`}
               >
-                Semua ({users.length})
+                All ({users.length})
               </button>
               <button
                 type="button"
                 onClick={() => setRoleFilter('SUPER_ADMIN')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors duration-150 ease-out active:scale-[0.975] flex items-center gap-1 ${
                   roleFilter === 'SUPER_ADMIN'
                     ? 'bg-slate-900 text-amber-300 shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
@@ -672,7 +746,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               <button
                 type="button"
                 onClick={() => setRoleFilter('ENGINEER')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors duration-150 ease-out active:scale-[0.975] flex items-center gap-1 ${
                   roleFilter === 'ENGINEER'
                     ? 'bg-[#00799e] text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
@@ -684,7 +758,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               <button
                 type="button"
                 onClick={() => setRoleFilter('OPERATOR')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors duration-150 ease-out active:scale-[0.975] flex items-center gap-1 ${
                   roleFilter === 'OPERATOR'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
@@ -696,7 +770,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               <button
                 type="button"
                 onClick={() => setRoleFilter('VIEWER')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-colors duration-150 ease-out active:scale-[0.975] flex items-center gap-1 ${
                   roleFilter === 'VIEWER'
                     ? 'bg-slate-600 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
@@ -709,37 +783,37 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
           </div>
 
           {/* Users Table */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
-            {filteredUsers.length === 0 ? (
-              <div className="py-12 text-center flex flex-col items-center justify-center text-slate-400">
-                <Users className="w-10 h-10 text-slate-300 mb-2" />
-                <h4 className="font-heading font-semibold text-base text-slate-800 mb-1">
-                  Tidak Ada Pengguna Ditemukan
-                </h4>
-                <p className="text-xs text-slate-400 max-w-sm mb-4">
-                  {searchQuery ? `Tidak ada user yang cocok dengan "${searchQuery}".` : 'Belum ada data user dalam filter ini.'}
-                </p>
-              </div>
-            ) : (
-              <div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-700">
-                    <thead className="bg-slate-50/80 text-[11px] uppercase font-bold text-slate-500 border-b border-slate-200">
-                      <tr>
-                        <th className="py-3 px-4">Nama Lengkap &amp; Email</th>
-                        <th className="py-3 px-4">Role Akses</th>
-                        <th className="py-3 px-4">Lokasi Plant</th>
-                        <th className="py-3 px-4">Status Akun</th>
-                        <th className="py-3 px-4">Terdaftar</th>
-                        <th className="py-3 px-4 text-right">Aksi</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
+          <div className="bg-white rounded-2xl shadow-xs overflow-hidden">
+              {filteredUsers.length === 0 ? (
+                <div className="py-12 text-center flex flex-col items-center justify-center text-slate-400">
+                  <Users className="w-10 h-10 text-slate-300 mb-2" />
+                  <h4 className="font-heading font-semibold text-base text-slate-800 mb-1">
+                    No Users Found
+                  </h4>
+                  <p className="text-xs text-slate-400 max-w-sm mb-4 font-mono">
+                    {searchQuery ? `No users match "${searchQuery}".` : 'No users registered under this filter.'}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader className="bg-slate-50 text-[10px] uppercase font-mono tracking-wider font-semibold text-slate-500 border-b border-slate-200">
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead className="py-2.5 px-4 font-mono font-semibold text-slate-500">Full Name &amp; Email</TableHead>
+                          <TableHead className="py-2.5 px-4 font-mono font-semibold text-slate-500">Access Role</TableHead>
+                          <TableHead className="py-2.5 px-4 font-mono font-semibold text-slate-500">Assigned Plant</TableHead>
+                          <TableHead className="py-2.5 px-4 font-mono font-semibold text-slate-500">Account Status</TableHead>
+                          <TableHead className="py-2.5 px-4 font-mono font-semibold text-slate-500">Created Date</TableHead>
+                          <TableHead className="py-2.5 px-4 text-right font-mono font-semibold text-slate-500">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="divide-y divide-slate-100 bg-white">
                       {paginatedUsers.map((u) => (
-                        <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3.5 px-4">
+                        <TableRow key={u.id} className="hover:bg-slate-50/70 transition-colors duration-150 ease-out">
+                          <TableCell className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[#00799e]/10 text-[#00799e] font-bold text-xs flex items-center justify-center shrink-0 border border-[#00799e]/20">
+                              <div className="size-8 rounded-full bg-[#00799e]/10 text-[#00799e] font-bold text-xs flex items-center justify-center shrink-0 border border-[#00799e]/20">
                                 {u.fullName.charAt(0).toUpperCase()}
                               </div>
                               <div>
@@ -751,83 +825,87 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                                 </span>
                               </div>
                             </div>
-                          </td>
+                          </TableCell>
 
-                          <td className="py-3.5 px-4">{getRoleBadge(u.role)}</td>
+                          <TableCell className="py-3.5 px-4">{getRoleBadge(u.role)}</TableCell>
 
-                          <td className="py-3.5 px-4">
+                          <TableCell className="py-3.5 px-4">
                             <span className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
-                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                              <Building2 className="size-3.5 text-slate-400" />
                               {u.siteName || 'WTP Plant Bandung'}
                             </span>
-                          </td>
+                          </TableCell>
 
-                          <td className="py-3.5 px-4">
+                          <TableCell className="py-3.5 px-4">
                             {u.status === 'ACTIVE' ? (
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" />
-                                Aktif
-                              </span>
+                              <Badge variant="outline" className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 border-emerald-200 inline-flex items-center gap-1">
+                                <CheckCircle2 className="size-3" />
+                                Active
+                              </Badge>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
-                                <XCircle className="w-3 h-3" />
-                                Nonaktif
-                              </span>
+                              <Badge variant="outline" className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 border-rose-200 inline-flex items-center gap-1">
+                                <XCircle className="size-3" />
+                                Inactive
+                              </Badge>
                             )}
-                          </td>
+                          </TableCell>
 
-                          <td className="py-3.5 px-4 text-[11px] font-mono text-slate-500">
+                          <TableCell className="py-3.5 px-4 text-[11px] font-mono text-slate-500">
                             {u.createdAt}
-                          </td>
+                          </TableCell>
 
-                          <td className="py-3.5 px-4 text-right">
+                          <TableCell className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <button
+                              <Button
                                 type="button"
+                                variant="ghost"
+                                size="icon-sm"
                                 onClick={() => handleOpenEdit(u)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-[#00799e] hover:bg-[#00799e]/10 transition-colors cursor-pointer"
-                                title={`Edit akun ${u.fullName}`}
+                                className="text-slate-400 hover:text-[#00799e] hover:bg-[#00799e]/10 cursor-pointer"
+                                title={`Edit account ${u.fullName}`}
                               >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
+                                <Pencil className="size-3.5" />
+                              </Button>
                               {u.email !== currentUser?.email && (
-                                <button
+                                <Button
                                   type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
                                   onClick={() => setDeleteCandidate(u)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                                  title={`Hapus user ${u.fullName}`}
+                                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                                  title={`Delete user ${u.fullName}`}
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                  <Trash2 className="size-3.5" />
+                                </Button>
                               )}
                             </div>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* User List Pagination Bar */}
                 <div className="p-3.5 bg-slate-50/70 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-3">
                     <span className="font-normal text-[11px] text-slate-500">
-                      Menampilkan{' '}
+                      Showing{' '}
                       <strong className="text-slate-700 font-semibold">
                         {filteredUsers.length > 0 ? userStartIdx + 1 : 0} -{' '}
                         {Math.min(userStartIdx + userPageSize, filteredUsers.length)}
                       </strong>{' '}
-                      dari <strong className="text-slate-700 font-semibold">{filteredUsers.length}</strong> pengguna
+                      of <strong className="text-slate-700 font-semibold">{filteredUsers.length}</strong> users
                     </span>
 
                     <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
-                      <span className="text-[11px] text-slate-400 font-normal">Tampilkan:</span>
+                      <span className="text-[11px] text-slate-400 font-normal">Show:</span>
                       <CustomSelect
                         options={[
-                          { value: 5, label: '5 / halaman' },
-                          { value: 10, label: '10 / halaman' },
-                          { value: 20, label: '20 / halaman' },
-                          { value: 50, label: '50 / halaman' },
+                          { value: 5, label: '5 / page' },
+                          { value: 10, label: '10 / page' },
+                          { value: 20, label: '20 / page' },
+                          { value: 50, label: '50 / page' },
                         ]}
                         value={userPageSize}
                         onChange={(val) => {
@@ -845,8 +923,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                       type="button"
                       disabled={safeUserPage <= 1}
                       onClick={() => setUserPage((p) => Math.max(1, p - 1))}
-                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Halaman Sebelumnya"
+                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer"
+                      title="Previous Page"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
@@ -856,7 +934,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                         key={pageNum}
                         type="button"
                         onClick={() => setUserPage(pageNum)}
-                        className={`min-w-[28px] h-7 px-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                        className={`min-w-[28px] h-7 px-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ease-out active:scale-[0.975] cursor-pointer ${
                           pageNum === safeUserPage
                             ? 'bg-[#00799e] text-white shadow-2xs'
                             : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -870,8 +948,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                       type="button"
                       disabled={safeUserPage >= totalUserPages}
                       onClick={() => setUserPage((p) => Math.min(totalUserPages, p + 1))}
-                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Halaman Selanjutnya"
+                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer"
+                      title="Next Page"
                     >
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
@@ -894,13 +972,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               const Icon = r.icon
               const count = users.filter((u) => u.role === r.id).length
               return (
-                <div
-                  key={r.id}
-                  className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs flex flex-col justify-between hover:border-[#00799e]/40 transition-all"
-                >
+                <div key={r.id} className="bg-white rounded-2xl p-5 shadow-xs hover:shadow-md transition-[box-shadow,transform] duration-150 ease-out flex flex-col justify-between h-full">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <div className={`w-8 h-8 rounded-xl ${r.badgeBg} text-white flex items-center justify-center shadow-xs`}>
                           <Icon className="w-4 h-4" />
                         </div>
@@ -908,13 +983,13 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                           <h4 className="font-heading font-semibold text-sm text-slate-900 m-0">
                             {r.label}
                           </h4>
-                          <span className="text-[10px] font-medium text-slate-400 block">
+                          <span className="text-[10px] font-mono text-slate-400 block">
                             {r.level}
                           </span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
-                        {count} Akun
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
+                        {count} Accounts
                       </span>
                     </div>
 
@@ -923,10 +998,10 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                     </p>
                   </div>
 
-                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Tingkat Akses:</span>
+                  <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono">
+                    <span className="text-slate-400">ACCESS:</span>
                     <span className={`font-semibold ${r.badgeTextCol}`}>
-                      {r.id === 'SUPER_ADMIN' ? '100% Akses' : r.id === 'ENGINEER' ? '80% Teknis' : r.id === 'OPERATOR' ? '60% Operasi' : '20% Read-Only'}
+                      {r.id === 'SUPER_ADMIN' ? '100% ROOT' : r.id === 'ENGINEER' ? '80% TECH' : r.id === 'OPERATOR' ? '60% OPS' : '20% VIEW'}
                     </span>
                   </div>
                 </div>
@@ -935,24 +1010,24 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
           </div>
 
           {/* Interactive Permission Matrix Table */}
-          <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
-            {/* Header / Filter inside Table */}
-            <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
-              <div>
-                <h3 className="font-heading font-semibold text-base text-slate-800 m-0">
-                  Matriks Hak Akses &amp; Otorisasi Fitur
-                </h3>
-                <p className="text-xs text-slate-400 m-0 font-normal mt-0.5">
-                  Tabel pemetaan izin akses pengguna SCADA berdasarkan modul keamanan
-                </p>
-              </div>
+          <div className="bg-white rounded-2xl shadow-xs overflow-hidden">
+              {/* Header / Filter inside Table */}
+              <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+                <div>
+                  <h3 className="font-heading font-semibold text-base text-slate-800 m-0">
+                    Role-Based Access Control (RBAC) Matrix
+                  </h3>
+                  <p className="text-xs text-slate-400 m-0 font-normal mt-0.5">
+                    Module permission mapping across operator, engineering, and administrative roles
+                  </p>
+                </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-[200px]">
                   <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Cari izin fitur..."
+                    placeholder="Search permissions..."
                     value={matrixSearch}
                     onChange={(e) => setMatrixSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#00799e] outline-hidden font-normal"
@@ -961,11 +1036,11 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
 
                 <CustomSelect
                   options={[
-                    { value: 'ALL', label: `Semua Modul (${PERMISSIONS_DATA.length})` },
+                    { value: 'ALL', label: `All Modules (${PERMISSIONS_DATA.length})` },
                     ...matrixModules.map((m) => ({
                       value: m,
-                      label: `Modul: ${m}`,
-                      sublabel: `${PERMISSIONS_DATA.filter((p) => p.module === m).length} izin`,
+                      label: `Module: ${m}`,
+                      sublabel: `${PERMISSIONS_DATA.filter((p) => p.module === m).length} permissions`,
                     })),
                   ]}
                   value={matrixModuleFilter}
@@ -981,142 +1056,142 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
             {filteredPermissions.length === 0 ? (
               <div className="py-10 text-center flex flex-col items-center justify-center text-slate-400">
                 <Search className="w-8 h-8 text-slate-300 mb-2" />
-                <p className="text-xs font-semibold text-slate-700 m-0">Tidak Ada Izin Ditemukan</p>
+                <p className="text-xs font-semibold text-slate-700 m-0">No Permissions Found</p>
                 <span className="text-[11px] text-slate-400">
-                  Coba gunakan kata kunci pencarian atau modul yang berbeda.
+                  Try adjusting your search query or module filter.
                 </span>
               </div>
             ) : (
               <div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-700">
-                    <thead className="bg-slate-100/70 text-[11px] font-bold text-slate-600 border-b border-slate-200">
-                      <tr>
-                        <th className="py-3 px-4 w-[38%]">Fitur &amp; Deskripsi Otorisasi</th>
-                        <th className="py-3 px-4 w-[16%]">Modul Keamanan</th>
-                        <th className="py-3 px-3 text-center w-[11.5%]">
+                  <Table>
+                    <TableHeader className="bg-slate-100/70 text-[11px] font-bold text-slate-600 border-b border-slate-200">
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="py-3 px-4 w-[38%] font-semibold text-slate-600">Feature &amp; Authorization Description</TableHead>
+                        <TableHead className="py-3 px-4 w-[16%] font-semibold text-slate-600">Security Module</TableHead>
+                        <TableHead className="py-3 px-3 text-center w-[11.5%] font-semibold text-slate-600">
                           <div className="flex flex-col items-center">
                             <span className="text-slate-900 font-bold">SUPER ADMIN</span>
                             <span className="text-[9px] text-amber-600 font-mono font-normal">Root / Master</span>
                           </div>
-                        </th>
-                        <th className="py-3 px-3 text-center w-[11.5%]">
+                        </TableHead>
+                        <TableHead className="py-3 px-3 text-center w-[11.5%] font-semibold text-slate-600">
                           <div className="flex flex-col items-center">
                             <span className="text-[#00799e] font-bold">ENGINEER</span>
-                            <span className="text-[9px] text-slate-400 font-mono font-normal">Teknis &amp; IoT</span>
+                            <span className="text-[9px] text-slate-400 font-mono font-normal">Technical &amp; IoT</span>
                           </div>
-                        </th>
-                        <th className="py-3 px-3 text-center w-[11.5%]">
+                        </TableHead>
+                        <TableHead className="py-3 px-3 text-center w-[11.5%] font-semibold text-slate-600">
                           <div className="flex flex-col items-center">
                             <span className="text-emerald-700 font-bold">OPERATOR</span>
-                            <span className="text-[9px] text-slate-400 font-mono font-normal">Kontrol Pompa</span>
+                            <span className="text-[9px] text-slate-400 font-mono font-normal">Pump Control</span>
                           </div>
-                        </th>
-                        <th className="py-3 px-3 text-center w-[11.5%]">
+                        </TableHead>
+                        <TableHead className="py-3 px-3 text-center w-[11.5%] font-semibold text-slate-600">
                           <div className="flex flex-col items-center">
                             <span className="text-slate-600 font-bold">VIEWER</span>
                             <span className="text-[9px] text-slate-400 font-mono font-normal">Monitoring</span>
                           </div>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-slate-100">
                       {paginatedPermissions.map((perm) => (
-                        <tr key={perm.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3 px-4">
+                        <TableRow key={perm.id} className="hover:bg-slate-50/70 transition-colors duration-150 ease-out">
+                          <TableCell className="py-3 px-4">
                             <span className="font-semibold text-slate-900 block leading-tight">
                               {perm.name}
                             </span>
                             <span className="text-[11px] text-slate-400 font-normal block mt-0.5 leading-snug">
                               {perm.desc}
                             </span>
-                          </td>
+                          </TableCell>
 
-                          <td className="py-3 px-4">
+                          <TableCell className="py-3 px-4">
                             <span className="px-2.5 py-1 rounded-lg text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200 inline-flex items-center gap-1">
-                              <Layers className="w-3 h-3 text-slate-400" />
+                              <Layers className="size-3 text-slate-400" />
                               {perm.module}
                             </span>
-                          </td>
+                          </TableCell>
 
                           {/* SUPER_ADMIN */}
-                          <td className="py-3 px-3 text-center">
+                          <TableCell className="py-3 px-3 text-center">
                             {perm.roles.SUPER_ADMIN ? (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
-                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
+                                <Check className="size-3.5 stroke-[2.5]" />
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300">
-                                <XCircle className="w-3.5 h-3.5" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-slate-100 text-slate-300">
+                                <XCircle className="size-3.5" />
                               </span>
                             )}
-                          </td>
+                          </TableCell>
 
                           {/* ENGINEER */}
-                          <td className="py-3 px-3 text-center">
+                          <TableCell className="py-3 px-3 text-center">
                             {perm.roles.ENGINEER ? (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
-                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
+                                <Check className="size-3.5 stroke-[2.5]" />
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300">
-                                <XCircle className="w-3.5 h-3.5" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-slate-100 text-slate-300">
+                                <XCircle className="size-3.5" />
                               </span>
                             )}
-                          </td>
+                          </TableCell>
 
                           {/* OPERATOR */}
-                          <td className="py-3 px-3 text-center">
+                          <TableCell className="py-3 px-3 text-center">
                             {perm.roles.OPERATOR ? (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
-                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
+                                <Check className="size-3.5 stroke-[2.5]" />
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300">
-                                <XCircle className="w-3.5 h-3.5" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-slate-100 text-slate-300">
+                                <XCircle className="size-3.5" />
                               </span>
                             )}
-                          </td>
+                          </TableCell>
 
                           {/* VIEWER */}
-                          <td className="py-3 px-3 text-center">
+                          <TableCell className="py-3 px-3 text-center">
                             {perm.roles.VIEWER ? (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
-                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-emerald-100 text-emerald-600 shadow-2xs">
+                                <Check className="size-3.5 stroke-[2.5]" />
                               </span>
                             ) : (
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300">
-                                <XCircle className="w-3.5 h-3.5" />
+                              <span className="inline-flex items-center justify-center size-6 rounded-full bg-slate-100 text-slate-300">
+                                <XCircle className="size-3.5" />
                               </span>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
 
                 {/* Matrix Pagination Bar */}
                 <div className="p-3.5 bg-slate-50 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-3">
                     <span className="font-normal text-[11px] text-slate-500">
-                      Menampilkan{' '}
+                      Showing{' '}
                       <strong className="text-slate-700 font-semibold">
                         {filteredPermissions.length > 0 ? matrixStartIdx + 1 : 0} -{' '}
                         {Math.min(matrixStartIdx + matrixPageSize, filteredPermissions.length)}
                       </strong>{' '}
-                      dari <strong className="text-slate-700 font-semibold">{filteredPermissions.length}</strong> hak akses
+                      of <strong className="text-slate-700 font-semibold">{filteredPermissions.length}</strong> permissions
                     </span>
 
                     <div className="flex items-center gap-1.5 pl-3 border-l border-slate-200">
-                      <span className="text-[11px] text-slate-400 font-normal">Tampilkan:</span>
+                      <span className="text-[11px] text-slate-400 font-normal">Show:</span>
                       <CustomSelect
                         options={[
-                          { value: 6, label: '6 / halaman' },
-                          { value: 8, label: '8 / halaman' },
-                          { value: 12, label: '12 / halaman' },
-                          { value: 18, label: '18 / halaman' },
-                          { value: 25, label: '25 / halaman' },
+                          { value: 6, label: '6 / page' },
+                          { value: 8, label: '8 / page' },
+                          { value: 12, label: '12 / page' },
+                          { value: 18, label: '18 / page' },
+                          { value: 25, label: '25 / page' },
                         ]}
                         value={matrixPageSize}
                         onChange={(val) => {
@@ -1134,8 +1209,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                       type="button"
                       disabled={safeMatrixPage <= 1}
                       onClick={() => setMatrixPage((p) => Math.max(1, p - 1))}
-                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Halaman Sebelumnya"
+                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer"
+                      title="Previous Page"
                     >
                       <ChevronLeft className="w-3.5 h-3.5" />
                     </button>
@@ -1145,7 +1220,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                         key={pageNum}
                         type="button"
                         onClick={() => setMatrixPage(pageNum)}
-                        className={`min-w-[28px] h-7 px-1.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                        className={`min-w-[28px] h-7 px-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ease-out active:scale-[0.975] cursor-pointer ${
                           pageNum === safeMatrixPage
                             ? 'bg-[#00799e] text-white shadow-2xs'
                             : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
@@ -1159,8 +1234,8 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                       type="button"
                       disabled={safeMatrixPage >= totalMatrixPages}
                       onClick={() => setMatrixPage((p) => Math.min(totalMatrixPages, p + 1))}
-                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                      title="Halaman Selanjutnya"
+                      className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer"
+                      title="Next Page"
                     >
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
@@ -1174,15 +1249,15 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 text-[11px]">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs"></span>
-                  <strong className="text-slate-700">Diizinkan:</strong> Memiliki wewenang eksekusi penuh
+                  <strong className="text-slate-700">Authorized:</strong> Full execution &amp; control privileges
                 </span>
                 <span className="flex items-center gap-1.5 text-[11px]">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-                  <strong className="text-slate-700">Dibatasi:</strong> Hak akses ditolak sistem
+                  <strong className="text-slate-700">Restricted:</strong> Access denied by system policy
                 </span>
               </div>
               <span className="text-[10px] font-mono text-slate-400">
-                Standar Keamanan RBAC ISO/IEC 27001
+                Role-Based Access Control Specification
               </span>
             </div>
           </div>
@@ -1192,370 +1267,354 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
       {/* ========================================================================= */}
       {/* 5. ADD USER MODAL WITH SLEEK CUSTOM ROLE SELECTOR CARDS                  */}
       {/* ========================================================================= */}
-      {isAddOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-fade-in"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setIsAddOpen(false)
-            }}
-          >
-            <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl p-6">
-              <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
-                <div className="w-10 h-10 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center shrink-0">
-                  <UserPlus className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-lg text-slate-900 m-0">
-                    Tambah Pengguna Baru
-                  </h3>
-                  <p className="text-xs text-slate-400 m-0 font-normal">
-                    Daftarkan akun operator, engineer, atau admin ke sistem SCADA
-                  </p>
-                </div>
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white border-0 rounded-2xl shadow-xl p-6">
+          <DialogHeader className="flex flex-col gap-1 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center shrink-0">
+                <UserPlus className="size-5" />
+              </div>
+              <div>
+                <DialogTitle className="font-heading font-semibold text-lg text-slate-900 m-0">
+                  Add System User
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-400 m-0 font-normal">
+                  Create a new account with role-based SCADA system privileges
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateUser} className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <Input
+                  type="text"
+                  required
+                  placeholder="e.g. Budi Santoso, S.T."
+                  value={addFullName}
+                  onChange={(e) => setAddFullName(e.target.value)}
+                  className="bg-slate-50 border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#00799e] h-9"
+                />
               </div>
 
-              <form onSubmit={handleCreateUser} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Nama Lengkap
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Contoh: Budi Santoso, S.T."
-                      value={addFullName}
-                      onChange={(e) => setAddFullName(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#00799e] focus:bg-white outline-hidden font-normal transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Alamat Email (Login)
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                      <input
-                        type="email"
-                        required
-                        placeholder="operator@ascon.co.id"
-                        value={addEmail}
-                        onChange={(e) => setAddEmail(e.target.value)}
-                        className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#00799e] focus:bg-white outline-hidden font-normal transition-all"
-                      />
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Email Address (Login ID)
+                </label>
+                <div className="relative">
+                  <Mail className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Input
+                    type="email"
+                    required
+                    placeholder="operator@ascon.co.id"
+                    value={addEmail}
+                    onChange={(e) => setAddEmail(e.target.value)}
+                    className="pl-9 bg-slate-50 border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#00799e] h-9"
+                  />
                 </div>
+              </div>
+            </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Password Awal
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <input
-                      type="password"
-                      required
-                      placeholder="Minimal 8 karakter..."
-                      value={addPassword}
-                      onChange={(e) => setAddPassword(e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#00799e] focus:bg-white outline-hidden font-normal transition-all"
-                    />
-                  </div>
-                </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Initial Password
+              </label>
+              <div className="relative">
+                <Lock className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <Input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Minimum 6 characters..."
+                  value={addPassword}
+                  onChange={(e) => setAddPassword(e.target.value)}
+                  className="pl-9 bg-slate-50 border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus-visible:ring-1 focus-visible:ring-[#00799e] h-9"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 mt-1 block">
+                Password must be at least 6 characters.
+              </span>
+            </div>
 
-                {/* Custom Modern Role Selector Cards */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">
-                    Pilih Hak Akses / Role Otorisasi
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {ROLE_OPTIONS.map((r) => {
-                      const Icon = r.icon
-                      const isSelected = addRole === r.id
-                      return (
+            {/* Custom Modern Role Selector Cards */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-2">
+                Assign Access Role
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {ROLE_OPTIONS.map((r) => {
+                  const Icon = r.icon
+                  const isSelected = addRole === r.id
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => setAddRole(r.id)}
+                      className={`p-3 rounded-xl border-2 cursor-pointer transition-colors duration-150 ease-out active:scale-[0.98] flex flex-col justify-between ${
+                        isSelected
+                          ? `${r.activeBorder} ${r.activeBg} shadow-xs`
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`size-7 rounded-lg ${r.badgeBg} text-white flex items-center justify-center shrink-0 shadow-2xs`}
+                          >
+                            <Icon className="size-3.5" />
+                          </div>
+                          <div>
+                            <span className="font-bold text-xs text-slate-900 block leading-tight">
+                              {r.label}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium block">
+                              {r.level}
+                            </span>
+                          </div>
+                        </div>
                         <div
-                          key={r.id}
-                          onClick={() => setAddRole(r.id)}
-                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
+                          className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
                             isSelected
-                              ? `${r.activeBorder} ${r.activeBg} shadow-xs`
-                              : 'border-slate-200 hover:border-slate-300 bg-white'
+                              ? 'border-[#00799e] bg-[#00799e] text-white'
+                              : 'border-slate-300 bg-white'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-7 h-7 rounded-lg ${r.badgeBg} text-white flex items-center justify-center shrink-0 shadow-2xs`}
-                              >
-                                <Icon className="w-3.5 h-3.5" />
-                              </div>
-                              <div>
-                                <span className="font-bold text-xs text-slate-900 block leading-tight">
-                                  {r.label}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium block">
-                                  {r.level}
-                                </span>
-                              </div>
-                            </div>
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                                isSelected
-                                  ? 'border-[#00799e] bg-[#00799e] text-white'
-                                  : 'border-slate-300 bg-white'
-                              }`}
-                            >
-                              {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-slate-500 leading-snug m-0 font-normal">
-                            {r.desc}
-                          </p>
+                          {isSelected && <Check className="size-2.5 stroke-[3]" />}
                         </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#00799e] hover:bg-[#006887] shadow-xs cursor-pointer transition-all"
-                  >
-                    Simpan Akun Baru
-                  </button>
-                </div>
-              </form>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug m-0 font-normal">
+                        {r.desc}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>,
-          document.body
-        )}
+
+            <DialogFooter className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsAddOpen(false)}
+                className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="h-9 px-5 rounded-xl text-xs font-semibold text-white bg-[#00799e] hover:bg-[#006887] shadow-xs cursor-pointer"
+              >
+                Create User
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ========================================================================= */}
       {/* 6. EDIT USER MODAL WITH SLEEK CUSTOM ROLE SELECTOR CARDS                 */}
       {/* ========================================================================= */}
-      {editingUser &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-fade-in"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setEditingUser(null)
-            }}
-          >
-            <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl p-6">
-              <div className="flex items-center gap-3 mb-5 pb-3 border-b border-slate-100">
-                <div className="w-10 h-10 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center shrink-0">
-                  <Pencil className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-lg text-slate-900 m-0">
-                    Edit Data Pengguna
-                  </h3>
-                  <p className="text-xs text-slate-400 m-0 font-mono">
-                    {editingUser.email}
-                  </p>
-                </div>
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white border-0 rounded-2xl shadow-xl p-6">
+          <DialogHeader className="flex flex-col gap-1 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center shrink-0">
+                <Pencil className="size-5" />
+              </div>
+              <div>
+                <DialogTitle className="font-heading font-semibold text-lg text-slate-900 m-0">
+                  Edit User Account
+                </DialogTitle>
+                <DialogDescription className="text-xs text-slate-400 m-0 font-mono">
+                  {editingUser?.email}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <form onSubmit={handleUpdateUser} className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <Input
+                  type="text"
+                  required
+                  value={editFullName}
+                  onChange={(e) => setEditFullName(e.target.value)}
+                  className="bg-slate-50 border-slate-200 rounded-xl text-xs text-slate-800 focus-visible:ring-1 focus-visible:ring-[#00799e] h-9"
+                />
               </div>
 
-              <form onSubmit={handleUpdateUser} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Nama Lengkap
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={editFullName}
-                      onChange={(e) => setEditFullName(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:border-[#00799e] focus:bg-white outline-hidden font-normal transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Status Akun
-                    </label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setEditStatus('ACTIVE')}
-                        className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border transition-all ${
-                          editStatus === 'ACTIVE'
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-2xs'
-                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Aktif</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setEditStatus('INACTIVE')}
-                        className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border transition-all ${
-                          editStatus === 'INACTIVE'
-                            ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-2xs'
-                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-                        }`}
-                      >
-                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Nonaktif</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Custom Role Selector Cards */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-2">
-                    Ubah Hak Akses / Role
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {ROLE_OPTIONS.map((r) => {
-                      const Icon = r.icon
-                      const isSelected = editRole === r.id
-                      return (
-                        <div
-                          key={r.id}
-                          onClick={() => setEditRole(r.id)}
-                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                            isSelected
-                              ? `${r.activeBorder} ${r.activeBg} shadow-xs`
-                              : 'border-slate-200 hover:border-slate-300 bg-white'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-1.5">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-7 h-7 rounded-lg ${r.badgeBg} text-white flex items-center justify-center shrink-0 shadow-2xs`}
-                              >
-                                <Icon className="w-3.5 h-3.5" />
-                              </div>
-                              <div>
-                                <span className="font-bold text-xs text-slate-900 block leading-tight">
-                                  {r.label}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-medium block">
-                                  {r.level}
-                                </span>
-                              </div>
-                            </div>
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
-                                isSelected
-                                  ? 'border-[#00799e] bg-[#00799e] text-white'
-                                  : 'border-slate-300 bg-white'
-                              }`}
-                            >
-                              {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-slate-500 leading-snug m-0 font-normal">
-                            {r.desc}
-                          </p>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Account Status
+                </label>
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer transition-colors"
+                    onClick={() => setEditStatus('ACTIVE')}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border transition-colors duration-150 ease-out active:scale-[0.975] ${
+                      editStatus === 'ACTIVE'
+                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-2xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
-                    Batal
+                    <CheckCircle2 className="size-3.5 text-emerald-600" />
+                    <span>Active</span>
                   </button>
+
                   <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-[#00799e] hover:bg-[#006887] shadow-xs cursor-pointer transition-all"
+                    type="button"
+                    onClick={() => setEditStatus('INACTIVE')}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer border transition-colors duration-150 ease-out active:scale-[0.975] ${
+                      editStatus === 'INACTIVE'
+                        ? 'bg-rose-50 border-rose-500 text-rose-700 shadow-2xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                    }`}
                   >
-                    Simpan Perubahan
+                    <XCircle className="size-3.5 text-rose-600" />
+                    <span>Inactive</span>
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>,
-          document.body
-        )}
+
+            {/* Custom Role Selector Cards */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-2">
+                Modify Access Role
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {ROLE_OPTIONS.map((r) => {
+                  const Icon = r.icon
+                  const isSelected = editRole === r.id
+                  return (
+                    <div
+                      key={r.id}
+                      onClick={() => setEditRole(r.id)}
+                      className={`p-3 rounded-xl border-2 cursor-pointer transition-colors duration-150 ease-out active:scale-[0.98] flex flex-col justify-between ${
+                        isSelected
+                          ? `${r.activeBorder} ${r.activeBg} shadow-xs`
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`size-7 rounded-lg ${r.badgeBg} text-white flex items-center justify-center shrink-0 shadow-2xs`}
+                          >
+                            <Icon className="size-3.5" />
+                          </div>
+                          <div>
+                            <span className="font-bold text-xs text-slate-900 block leading-tight">
+                              {r.label}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium block">
+                              {r.level}
+                            </span>
+                          </div>
+                        </div>
+                        <div
+                          className={`size-4 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 ${
+                            isSelected
+                              ? 'border-[#00799e] bg-[#00799e] text-white'
+                              : 'border-slate-300 bg-white'
+                          }`}
+                        >
+                          {isSelected && <Check className="size-2.5 stroke-[3]" />}
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug m-0 font-normal">
+                        {r.desc}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <DialogFooter className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditingUser(null)}
+                className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="h-9 px-5 rounded-xl text-xs font-semibold text-white bg-[#00799e] hover:bg-[#006887] shadow-xs cursor-pointer"
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ========================================================================= */}
       {/* 7. DELETE CONFIRMATION MODAL                                              */}
       {/* ========================================================================= */}
-      {deleteCandidate &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-fade-in"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) setDeleteCandidate(null)
-            }}
-          >
-            <div className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-2xl p-6">
-              <div className="flex items-center gap-3 text-rose-600 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
-                  <Trash2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-semibold text-base text-slate-900 m-0">
-                    Konfirmasi Hapus Pengguna
-                  </h4>
-                  <p className="text-xs text-slate-500 m-0 font-normal">
-                    Aksi ini akan mencabut izin akses akun secara permanen
-                  </p>
-                </div>
+      <AlertDialog open={!!deleteCandidate} onOpenChange={(open) => !open && setDeleteCandidate(null)}>
+        <AlertDialogContent className="sm:max-w-md bg-white border-0 rounded-2xl shadow-xl p-6">
+          <AlertDialogHeader className="flex flex-col gap-2">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="size-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <Trash2 className="size-5" />
               </div>
-
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1 mb-4">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Nama:</span>
-                  <strong className="text-slate-800">{deleteCandidate.fullName}</strong>
+              <div>
+                <AlertDialogTitle className="font-heading font-semibold text-base text-slate-900 m-0">
+                  Delete User Account
+                </AlertDialogTitle>
+                <div className="text-xs text-slate-500 m-0 font-normal">
+                  Permanently revokes system access for this user
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Email:</span>
-                  <span className="font-mono text-slate-700">{deleteCandidate.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Role:</span>
-                  <span className="font-semibold text-[#00799e]">{deleteCandidate.role}</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-600 m-0 leading-relaxed font-normal mb-5">
-                Apakah Anda yakin ingin menghapus akun ini dari sistem? User tidak akan dapat login lagi ke SCADA.
-              </p>
-
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDeleteCandidate(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDeleteUser}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer"
-                >
-                  Ya, Hapus Pengguna
-                </button>
               </div>
             </div>
-          </div>,
-          document.body
-        )}
+            <AlertDialogDescription className="text-xs text-slate-600 m-0 leading-relaxed font-normal pt-2">
+              Are you sure you want to delete this user? They will no longer be able to sign in or operate the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {deleteCandidate && (
+            <div className="p-3.5 bg-slate-50 rounded-xl text-xs space-y-1.5 my-2">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Name:</span>
+                <strong className="text-slate-800">{deleteCandidate.fullName}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Email:</span>
+                <span className="font-mono text-slate-700">{deleteCandidate.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Role:</span>
+                <span className="font-semibold text-[#00799e]">{deleteCandidate.role}</span>
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter className="flex items-center justify-end gap-2 pt-2">
+            <AlertDialogCancel
+              onClick={() => setDeleteCandidate(null)}
+              className="h-9 px-4 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 cursor-pointer"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="h-9 px-4 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer"
+            >
+              Delete User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

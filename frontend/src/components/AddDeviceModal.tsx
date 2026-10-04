@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
-import { Server, X, Network, Radio, Cpu } from 'lucide-react'
+import { Server } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 interface AddDeviceModalProps {
   isOpen: boolean
@@ -19,24 +28,15 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
   const [firmware, setFirmware] = useState('1.0.4')
   const [siteId, setSiteId] = useState('WTP Plant Bandung')
 
-  // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
       setCode(`gw-00${Math.floor(Math.random() * 80 + 10)}`)
       setName('')
       setIp(`192.168.1.${Math.floor(Math.random() * 150 + 100)}`)
       setFirmware('1.0.4')
       setSiteId('WTP Plant Bandung')
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
     }
   }, [isOpen])
-
-  if (!isOpen) return null
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,144 +53,110 @@ export const AddDeviceModal: React.FC<AddDeviceModalProps> = ({
     onClose()
   }
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none animate-fade-in"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col">
-        {/* Modal Header */}
-        <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-lg bg-white border-0 rounded-2xl shadow-xl p-6">
+        <DialogHeader className="flex flex-col gap-1 pb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
-              <Server className="w-5 h-5 text-white" />
+            <div className="size-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
+              <Server className="size-5 text-white" />
             </div>
             <div>
-              <h3 className="font-heading font-semibold text-base text-slate-900 m-0 leading-tight">
-                Tambah Gateway IoT Baru
-              </h3>
-              <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
-                Pendaftaran Edge Gateway &amp; Modbus Ingestion Panel
-              </p>
+              <DialogTitle className="font-heading font-semibold text-base text-slate-900 leading-tight">
+                Register IoT Gateway
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 font-normal mt-0.5">
+                Configure edge telemetry node and MQTT transmission parameters
+              </DialogDescription>
             </div>
           </div>
+        </DialogHeader>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 text-xs">
-          {/* Row 1: Code & IP */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                Kode / ID Gateway *
-              </label>
-              <input
-                type="text"
-                required
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="Contoh: gw-003"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                IP Address Jaringan *
-              </label>
-              <input
-                type="text"
-                required
-                value={ip}
-                onChange={(e) => setIp(e.target.value)}
-                placeholder="Contoh: 192.168.1.103"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs pt-1">
+          {/* Row 1: Code */}
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium text-slate-700">Gateway Code *</label>
+            <Input
+              type="text"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="e.g. gw-001"
+              className="font-mono text-xs font-semibold lowercase bg-slate-50 border-slate-200 focus:bg-white"
+            />
           </div>
 
           {/* Row 2: Name */}
-          <div>
-            <label className="block font-medium text-slate-700 mb-1">
-              Nama Gateway / Panel *
-            </label>
-            <input
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium text-slate-700">Gateway Node Name *</label>
+            <Input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Gateway Distribusi - Edge Panel 3"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
+              placeholder="e.g. Intake RTU Gateway 01"
+              className="text-xs font-medium bg-slate-50 border-slate-200 focus:bg-white"
             />
           </div>
 
-          {/* Row 3: Site & Firmware */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                Lokasi / Plant Site
-              </label>
-              <input
+          {/* Row 3: IP Address & Firmware */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Static IP Address *</label>
+              <Input
                 type="text"
-                value={siteId}
-                onChange={(e) => setSiteId(e.target.value)}
-                placeholder="WTP Plant Bandung"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-[#00799e] outline-hidden transition-all font-normal"
+                required
+                value={ip}
+                onChange={(e) => setIp(e.target.value)}
+                placeholder="192.168.1.105"
+                className="font-mono text-xs bg-slate-50 border-slate-200 focus:bg-white"
               />
             </div>
-
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                Versi Firmware
-              </label>
-              <input
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Firmware Version</label>
+              <Input
                 type="text"
                 value={firmware}
                 onChange={(e) => setFirmware(e.target.value)}
                 placeholder="1.0.4"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs text-slate-800 focus:bg-white focus:border-[#00799e] outline-hidden transition-all font-normal"
+                className="font-mono text-xs bg-slate-50 border-slate-200 focus:bg-white"
               />
             </div>
           </div>
 
-          {/* Topic Preview */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
-            <span className="text-[11px] font-semibold text-slate-600 block mb-0.5">
-              Topic MQTT Ingestion Otomatis:
-            </span>
-            <code className="font-mono text-[11px] text-[#00799e] block break-all">
-              swpm/v1/{siteId.toLowerCase().replace(/\s+/g, '_')}/{code.toLowerCase() || 'gw-xxx'}/telemetry
-            </code>
+          {/* Row 4: Site Location */}
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium text-slate-700">Assigned Plant / Location</label>
+            <Input
+              type="text"
+              value={siteId}
+              onChange={(e) => setSiteId(e.target.value)}
+              placeholder="WTP Plant Bandung"
+              className="text-xs bg-slate-50 border-slate-200 focus:bg-white"
+            />
           </div>
 
-          {/* Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2">
-            <button
+          {/* Modal Actions */}
+          <DialogFooter className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="text-xs font-medium text-slate-600 active:scale-[0.975] transition-transform duration-150"
             >
-              Batal
-            </button>
-            <button
+              Cancel
+            </Button>
+            <Button
               type="submit"
-              className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] active:scale-95 transition-all cursor-pointer shadow-xs"
+              size="sm"
+              className="text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] shadow-xs active:scale-[0.975] transition-transform duration-150"
             >
-              Simpan Gateway
-            </button>
-          </div>
+              Register Gateway
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   )
 }

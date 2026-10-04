@@ -9,6 +9,7 @@ import type {
   AddSensorInput,
   SimulationStats,
   PumpStatus,
+  PumpSubtype,
 } from '../types/pump'
 import {
   api,
@@ -120,6 +121,27 @@ export function usePumpSystem() {
             const sumF = parsedPumps.reduce((acc, p) => acc + p.metrics.flow_m3h, 0)
             const sumPow = parsedPumps.reduce((acc, p) => acc + p.metrics.power_kw, 0)
 
+            const nameLower = a.name.toLowerCase()
+            const descLower = ((a as any).description || '').toLowerCase()
+            const isBoosterOrTransfer =
+              nameLower.includes('booster') ||
+              nameLower.includes('distribusi') ||
+              nameLower.includes('transfer') ||
+              descLower.includes('booster') ||
+              descLower.includes('tanpa tangki') ||
+              descLower.includes('no tank')
+
+            const hasLevelSensor = areaSensors.some(
+              (s: any) =>
+                s.metric_code === 'water_level_m' ||
+                s.metric_code === 'tank_level_pct' ||
+                s.sensor_type === 'LEVEL_SENSOR' ||
+                s.sensor_type === 'DISTANCE_SENSOR' ||
+                s.code?.startsWith('LT-')
+            )
+
+            const hasTank = hasLevelSensor || (!isBoosterOrTransfer && (nameLower.includes('tank') || nameLower.includes('reservoir') || nameLower.includes('intake') || nameLower.includes('wtp') || idx === 0))
+
             return {
               id: a.id,
               code: a.code,
@@ -129,7 +151,9 @@ export function usePumpSystem() {
               basePressure: avgP > 1 ? avgP : 3.5,
               baseFlow: sumF > 5 ? sumF : 50.0,
               color: colorList[idx % colorList.length],
-              tankLevel: 75.0,
+              hasTank,
+              tankLevel: hasTank ? 75.0 : undefined,
+              tankCapacityL: hasTank ? 5000 : undefined,
               motors: [m1Run, m2Run],
               pressure: avgP,
               flowRate: sumF,

@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import type { AreaRoom, DeviceGateway, AddSensorInput, SensorType } from '../types/pump'
 import { CustomSelect, type SelectOption } from './CustomSelect'
-import { Radio, X, Activity, Layers, Disc, Lock } from 'lucide-react'
+import { Radio, Activity, Layers, Disc, Lock } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 
 interface AddSensorModalProps {
   isOpen: boolean
@@ -30,10 +39,8 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
   const [minThreshold, setMinThreshold] = useState(0.5)
   const [maxThreshold, setMaxThreshold] = useState(6.0)
 
-  // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
       setCode(`PT-0${Math.floor(Math.random() * 90 + 10)}`)
       setName('')
       setSensorType('PRESSURE_SENSOR')
@@ -41,17 +48,11 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
       setUnit('bar')
       setMinThreshold(0.5)
       setMaxThreshold(6.0)
-    } else {
-      document.body.style.overflow = 'unset'
-    }
-    return () => {
-      document.body.style.overflow = 'unset'
     }
   }, [isOpen])
 
   if (!isOpen) return null
 
-  // Auto configure metric code and unit when sensor type changes (Fixed/ReadOnly)
   const handleSensorTypeChange = (type: SensorType) => {
     setSensorType(type)
     switch (type) {
@@ -62,64 +63,77 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
         setMaxThreshold(6.0)
         break
       case 'FLOW_METER':
-        setMetricCode('flow_m3h')
+        setMetricCode('flow_rate_m3h')
         setUnit('m³/h')
-        setMinThreshold(0)
-        setMaxThreshold(100)
+        setMinThreshold(5.0)
+        setMaxThreshold(85.0)
         break
       case 'LEVEL_SENSOR':
       case 'DISTANCE_SENSOR':
-        setMetricCode('tank_level_pct')
-        setUnit('%')
-        setMinThreshold(20)
-        setMaxThreshold(95)
+        setMetricCode('water_level_m')
+        setUnit('m')
+        setMinThreshold(0.2)
+        setMaxThreshold(5.0)
         break
       case 'TEMPERATURE_SENSOR':
-        setMetricCode('temp_c')
+        setMetricCode('motor_temp_c')
         setUnit('°C')
-        setMinThreshold(10)
-        setMaxThreshold(85)
+        setMinThreshold(20.0)
+        setMaxThreshold(75.0)
+        break
+      case 'POWER_METER':
+        setMetricCode('power_kw')
+        setUnit('kW')
+        setMinThreshold(1.0)
+        setMaxThreshold(30.0)
+        break
+      case 'VOLTAGE_SENSOR':
+        setMetricCode('voltage_v')
+        setUnit('V')
+        setMinThreshold(360.0)
+        setMaxThreshold(420.0)
         break
       case 'CURRENT_SENSOR':
         setMetricCode('current_a')
         setUnit('A')
-        setMinThreshold(0)
-        setMaxThreshold(60)
-        break
-      case 'VIBRATION_SENSOR':
-        setMetricCode('vibration_mms')
-        setUnit('mm/s')
-        setMinThreshold(0)
-        setMaxThreshold(5.0)
+        setMinThreshold(2.0)
+        setMaxThreshold(45.0)
         break
       default:
         setMetricCode('custom_val')
-        setUnit('val')
+        setUnit('unit')
+        setMinThreshold(0)
+        setMaxThreshold(100)
     }
   }
 
-  const allPumps = rooms.flatMap((r) => r.pumps)
-
   const sensorTypeOptions: SelectOption[] = [
-    { value: 'PRESSURE_SENSOR', label: 'Pressure (Tekanan Air)' },
-    { value: 'FLOW_METER', label: 'Flow Meter (Debit Aliran)' },
-    { value: 'LEVEL_SENSOR', label: 'Level Sensor (Level Tangki)' },
-    { value: 'DISTANCE_SENSOR', label: 'Distance (Ultrasonik)' },
-    { value: 'TEMPERATURE_SENSOR', label: 'Temperature (Suhu Air)' },
-    { value: 'CURRENT_SENSOR', label: 'Current (Arus Listrik)' },
-    { value: 'VIBRATION_SENSOR', label: 'Vibration (Getaran)' },
+    { value: 'PRESSURE_SENSOR', label: 'Pressure Sensor (bar)' },
+    { value: 'FLOW_METER', label: 'Flow Meter (m³/h)' },
+    { value: 'LEVEL_SENSOR', label: 'Water Level Sensor (m)' },
+    { value: 'TEMPERATURE_SENSOR', label: 'Temperature Sensor (°C)' },
+    { value: 'POWER_METER', label: 'Power Meter (kW)' },
+    { value: 'VOLTAGE_SENSOR', label: 'Voltage Sensor (V)' },
+    { value: 'CURRENT_SENSOR', label: 'Current Sensor (A)' },
   ]
+
+  const allPumps = rooms.flatMap((r) =>
+    r.pumps.map((p) => ({
+      ...p,
+      areaName: r.name,
+    }))
+  )
 
   const targetTypeOptions: SelectOption[] = [
     {
       value: 'AREA',
-      label: 'Ruangan / Area',
-      icon: <Layers className="w-3.5 h-3.5 text-[#00799e]" />,
+      label: 'Plant Station / Room',
+      icon: <Layers className="size-3.5 text-[#00799e]" />,
     },
     {
       value: 'PUMP',
-      label: 'Asset Pompa',
-      icon: <Disc className="w-3.5 h-3.5 text-[#00799e]" />,
+      label: 'Pump Asset',
+      icon: <Disc className="size-3.5 text-[#00799e]" />,
     },
   ]
 
@@ -162,92 +176,73 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
     onClose()
   }
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[92vh]">
-        {/* Modal Header */}
-        <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto bg-white border-0 rounded-2xl shadow-xl p-6">
+        <DialogHeader className="flex flex-col gap-1 pb-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs">
-              <Radio className="w-5 h-5" />
+            <div className="size-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
+              <Radio className="size-5" />
             </div>
             <div>
-              <h3 className="font-heading font-semibold text-base text-slate-900 m-0 leading-tight">
-                Tambah Sensor &amp; Binding
-              </h3>
-              <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
-                Konfigurasi Instrumentasi &amp; Sensor Binding
-              </p>
+              <DialogTitle className="font-heading font-semibold text-base text-slate-900 leading-tight">
+                Add Sensor &amp; Telemetry Binding
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500 font-normal mt-0.5">
+                Configure field transmitter channel and target telemetry binding
+              </DialogDescription>
             </div>
           </div>
+        </DialogHeader>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Modal Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs pt-1">
           {/* Row 1: Code & Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">
-                Kode / Tag Sensor *
-              </label>
-              <input
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Sensor Tag / Code *</label>
+              <Input
                 type="text"
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Contoh: PT-04 / FT-04"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
+                placeholder="e.g. PT-04 / FT-04"
+                className="font-mono text-xs font-semibold bg-slate-50 border-slate-200 focus:bg-white"
               />
             </div>
 
-            <div>
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">Sensor Instrument Type</label>
               <CustomSelect
-                label="Tipe Instrumentasi Sensor"
                 options={sensorTypeOptions}
                 value={sensorType}
                 onChange={(val) => handleSensorTypeChange(val as SensorType)}
-                colorTheme="blue"
               />
             </div>
           </div>
 
           {/* Row 2: Name */}
-          <div>
-            <label className="block font-medium text-slate-700 mb-1">
-              Nama Lengkap Sensor *
-            </label>
-            <input
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium text-slate-700">Transmitter / Sensor Name *</label>
+            <Input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Discharge Pressure Transmitter Booster Line B"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
+              placeholder="e.g. Discharge Pressure Line B"
+              className="text-xs font-medium bg-slate-50 border-slate-200 focus:bg-white"
             />
           </div>
 
           {/* Row 3: Sensor Binding (Target Type: Area or Pump Asset) */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-            <span className="block font-semibold text-slate-800 text-xs">
-              Target Sensor Binding
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2.5">
+            <span className="font-semibold text-slate-800 text-xs">
+              Sensor Target Binding
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+              <div className="flex flex-col gap-1.5">
+                <label className="font-medium text-slate-700">Binding Scope</label>
                 <CustomSelect
-                  label="Bind Terhadap"
                   options={targetTypeOptions}
                   value={targetType}
                   onChange={(val) => {
@@ -259,110 +254,106 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                       setTargetId(allPumps[0]?.id || 'pump-01')
                     }
                   }}
-                  colorTheme="blue"
                 />
               </div>
 
-              <div>
+              <div className="flex flex-col gap-1.5">
+                <label className="font-medium text-slate-700">Target Asset / Station</label>
                 <CustomSelect
-                  label="Pilih Objek Terkait"
                   options={targetObjectOptions}
                   value={targetId}
                   onChange={(val) => setTargetId(val)}
-                  colorTheme="blue"
                 />
               </div>
             </div>
           </div>
 
-          {/* Row 4: Gateway IoT & Unit (READ ONLY / LOCKED) */}
+          {/* Row 4: Gateway IoT & Unit */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
+            <div className="flex flex-col gap-1.5">
+              <label className="font-medium text-slate-700">IoT Gateway Source</label>
               <CustomSelect
-                label="Gateway IoT Source"
                 options={gatewayOptions}
                 value={deviceId}
                 onChange={(val) => setDeviceId(val)}
-                colorTheme="blue"
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block font-medium text-slate-700">
-                  Satuan Ukur (Unit)
-                </label>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="font-medium text-slate-700">Engineering Unit</label>
                 <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-normal">
-                  <Lock className="w-2.5 h-2.5 text-slate-400" />
-                  Otomatis
+                  <Lock className="size-2.5 text-slate-400" />
+                  Auto-calibrated
                 </span>
               </div>
-              <input
+              <Input
                 type="text"
                 readOnly
                 disabled
                 value={unit}
-                title="Satuan ukur terkunci otomatis mengikuti tipe instrumentasi sensor"
-                className="w-full px-3 py-2 bg-slate-100/90 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-600 cursor-not-allowed select-none outline-hidden"
+                className="font-mono text-xs font-semibold text-slate-600 bg-slate-100 cursor-not-allowed select-none"
               />
             </div>
           </div>
 
           {/* Row 5: Alarm Rule Thresholds */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2">
             <div className="flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-amber-600" />
-              <span className="block font-semibold text-slate-800 text-xs">
-                Ambang Batas Operasional Normal (Threshold)
+              <Activity className="size-3.5 text-amber-600" />
+              <span className="font-semibold text-slate-800 text-xs">
+                Operating Normal Range &amp; Trip Thresholds
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
-                  Batas Bawah Normal (Min)
+              <div className="flex flex-col gap-1">
+                <label className="font-normal text-[11px] text-slate-500">
+                  Lower Normal Limit (Min)
                 </label>
-                <input
+                <Input
                   type="number"
                   step="0.1"
                   value={minThreshold}
                   onChange={(e) => setMinThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-semibold text-slate-900 outline-hidden focus:border-[#00799e]"
+                  className="font-mono text-xs font-semibold bg-white"
                 />
               </div>
-              <div>
-                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
-                  Batas Atas Alarm (Max)
+              <div className="flex flex-col gap-1">
+                <label className="font-normal text-[11px] text-slate-500">
+                  Upper Trip Limit (Max)
                 </label>
-                <input
+                <Input
                   type="number"
                   step="0.1"
                   value={maxThreshold}
                   onChange={(e) => setMaxThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-semibold text-slate-900 outline-hidden focus:border-[#00799e]"
+                  className="font-mono text-xs font-semibold bg-white"
                 />
               </div>
             </div>
           </div>
 
           {/* Modal Actions */}
-          <div className="pt-2 flex items-center justify-end gap-2.5">
-            <button
+          <DialogFooter className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="text-xs font-medium text-slate-600 active:scale-[0.975] transition-transform duration-150"
             >
-              Batal
-            </button>
-            <button
+              Cancel
+            </Button>
+            <Button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] active:scale-95 transition-all cursor-pointer shadow-xs"
+              size="sm"
+              className="text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] shadow-xs active:scale-[0.975] transition-transform duration-150"
             >
-              Simpan Sensor
-            </button>
-          </div>
+              Save Sensor
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   )
 }

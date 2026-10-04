@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import type { AlarmItem } from '../types/pump'
 import { AlertOctagon, CheckCircle2, ShieldAlert, CheckCheck } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 interface AlarmsPanelProps {
   alarms: AlarmItem[]
@@ -20,66 +22,66 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
   const getSeverityBadge = (severity: AlarmItem['severity']) => {
     switch (severity) {
       case 'CRITICAL':
-        return 'bg-red-600 text-white'
+        return 'bg-red-600 text-white hover:bg-red-600'
       case 'HIGH':
-        return 'bg-amber-600 text-white'
+        return 'bg-amber-600 text-white hover:bg-amber-600'
       case 'MEDIUM':
-        return 'bg-amber-500 text-white'
+        return 'bg-amber-500 text-white hover:bg-amber-500'
       case 'LOW':
-        return 'bg-[#00799e] text-white'
+        return 'bg-[#00799e] text-white hover:bg-[#00799e]'
     }
   }
 
   return (
-    <section className="bg-white border border-slate-200 rounded-[22px] p-5 sm:p-6 shadow-xs mb-6 select-none">
+    <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs mb-6 select-none">
       {/* Panel Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <AlertOctagon className="w-4 h-4" />
+          <div className="size-8 rounded-lg bg-slate-900 text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
+            <AlertOctagon className="size-4" />
           </div>
           <div>
-            <h3 className="font-heading font-semibold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
-              Panel Alarm &amp; Kondisi Abnormal
+            <h3 className="font-heading font-semibold text-base sm:text-lg text-slate-900 m-0 leading-tight">
+              Active Alarms &amp; Alerts
             </h3>
             <span className="text-xs text-slate-500 font-normal">
-              Evaluasi rule engine otomatis real-time Fastify Backend
+              Real-time automated trip and threshold evaluation
             </span>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Status Filter Buttons */}
-          <div className="flex items-center p-1 bg-slate-100 rounded-xl">
+          <div className="flex items-center p-0.5 bg-slate-100 rounded-lg">
             <button
               onClick={() => setFilterStatus('OPEN')}
-              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer ${
                 filterStatus === 'OPEN'
-                  ? 'bg-red-600 text-white shadow-xs'
+                  ? 'bg-rose-600 text-white shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Aktif ({openAlarmsCount})
+              Active ({openAlarmsCount})
             </button>
             <button
               onClick={() => setFilterStatus('ACKNOWLEDGED')}
-              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer ${
                 filterStatus === 'ACKNOWLEDGED'
-                  ? 'bg-amber-600 text-white shadow-xs'
+                  ? 'bg-amber-600 text-white shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Diakui
+              Acknowledged
             </button>
             <button
               onClick={() => setFilterStatus('ALL')}
-              className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer ${
                 filterStatus === 'ALL'
-                  ? 'bg-slate-800 text-white shadow-xs'
+                  ? 'bg-slate-900 text-white shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              Semua ({alarms.length})
+              All ({alarms.length})
             </button>
           </div>
         </div>
@@ -88,16 +90,16 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
       {/* Alarms List */}
       {filteredAlarms.length === 0 ? (
         <div className="py-8 text-center flex flex-col items-center justify-center text-slate-400 bg-slate-50/70 border border-slate-100 rounded-xl">
-          <CheckCircle2 className="w-8 h-8 text-emerald-600 mb-2" />
-          <p className="font-bold text-sm text-slate-700 m-0">
+          <CheckCircle2 className="size-8 text-emerald-600 mb-2" />
+          <p className="font-semibold text-sm text-slate-700 m-0">
             {filterStatus === 'OPEN'
-              ? 'Seluruh Sistem Normal'
-              : 'Tidak ada data alarm untuk filter ini'}
+              ? 'All Systems Normal'
+              : 'No alarms found for this filter'}
           </p>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 mt-1">
             {filterStatus === 'OPEN'
-              ? 'Tidak ada alarm aktif pada seluruh site & pompa saat ini.'
-              : 'Silakan ubah filter status untuk melihat riwayat alarm lain.'}
+              ? 'No active alarms across any plant stations or pumps.'
+              : 'Select another filter to view historical records.'}
           </span>
         </div>
       ) : (
@@ -107,18 +109,18 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
               key={alarm.id}
               className={`p-3.5 sm:p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                 alarm.status === 'OPEN'
-                  ? 'bg-red-50/30 border-red-200/80'
+                  ? 'bg-rose-50/40 border-rose-200/80'
                   : 'bg-slate-50 border-slate-200'
               }`}
             >
               <div className="flex items-start gap-3">
-                <span
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-extrabold tracking-wider uppercase shrink-0 ${getSeverityBadge(
+                <Badge
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wider uppercase shrink-0 border-0 ${getSeverityBadge(
                     alarm.severity
                   )}`}
                 >
                   {alarm.severity}
-                </span>
+                </Badge>
 
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -133,10 +135,10 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
                       ({alarm.openedAt})
                     </span>
                     {alarm.status === 'ACKNOWLEDGED' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-extrabold">
-                        <CheckCheck className="w-3 h-3" />
-                        Diakui {alarm.acknowledgedBy ? `(${alarm.acknowledgedBy})` : ''}
-                      </span>
+                      <Badge variant="outline" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-bold border-amber-200">
+                        <CheckCheck className="size-3" />
+                        Acknowledged {alarm.acknowledgedBy ? `(${alarm.acknowledgedBy})` : ''}
+                      </Badge>
                     )}
                   </div>
                   <p className="text-xs text-slate-600 m-0 mt-0.5 leading-relaxed">
@@ -147,13 +149,14 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
 
               {/* Acknowledge Button */}
               {alarm.status === 'OPEN' && (
-                <button
+                <Button
                   onClick={() => onAcknowledge(alarm.id)}
-                  className="self-end sm:self-auto px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 active:bg-black text-white text-xs font-bold transition-all cursor-pointer shadow-2xs shrink-0 flex items-center gap-1.5 active:scale-95"
+                  size="sm"
+                  className="self-end sm:self-auto bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition-colors duration-150 ease-out active:scale-[0.975] cursor-pointer shadow-2xs shrink-0 flex items-center gap-1.5"
                 >
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                  <ShieldAlert className="size-3.5 text-amber-400" />
                   <span>Acknowledge</span>
-                </button>
+                </Button>
               )}
             </div>
           ))}

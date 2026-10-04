@@ -9,7 +9,6 @@ import { AreaManagementView } from './components/AreaManagementView'
 import { PumpAreaView } from './components/PumpAreaView'
 import { DeviceHealthTable } from './components/DeviceHealthTable'
 import { SensorManagementTable } from './components/SensorManagementTable'
-import { AlarmsPanel } from './components/AlarmsPanel'
 import { AddAreaModal } from './components/AddAreaModal'
 import { EditAreaModal } from './components/EditAreaModal'
 import { AddPumpModal } from './components/AddPumpModal'
@@ -89,9 +88,9 @@ export function App() {
   const handleAddArea = async (payload: { code: string; name: string; description?: string }) => {
     try {
       await addArea(payload)
-      toast.success('Area Berhasil Ditambahkan', `Ruangan ${payload.name} (${payload.code}) telah terdaftar.`)
+      toast.success('Station Registered', `Station ${payload.name} (${payload.code}) registered successfully.`)
     } catch {
-      toast.error('Gagal Menambahkan Area', 'Terjadi kesalahan saat menyimpan data ruangan.')
+      toast.error('Failed to Add Station', 'An error occurred while saving station data.')
     }
   }
 
@@ -101,81 +100,81 @@ export function App() {
   ) => {
     try {
       await updateArea(areaId, payload)
-      toast.success('Data Ruangan Diperbarui', `Informasi area ${payload.name} berhasil disimpan.`)
+      toast.success('Station Updated', `Configuration for station ${payload.name} saved.`)
     } catch {
-      toast.error('Gagal Memperbarui Area', 'Terjadi kesalahan saat memperbarui data ruangan.')
+      toast.error('Failed to Update Station', 'An error occurred while updating station data.')
     }
   }
 
   const handleDeleteArea = async (areaId: string) => {
     try {
       await deleteArea(areaId)
-      toast.info('Area Dihapus', 'Ruangan berhasil dihapus dari sistem.')
+      toast.info('Station Deleted', 'Station removed from SCADA system.')
     } catch {
-      toast.error('Gagal Menghapus Area', 'Terjadi kesalahan saat menghapus ruangan.')
+      toast.error('Failed to Delete Station', 'An error occurred while deleting station.')
     }
   }
 
   const handleAddPump = async (payload: any) => {
     try {
       await addPump(payload)
-      toast.success('Pompa Berhasil Didaftarkan', `Unit ${payload.name} (${payload.code}) siap dioperasikan.`)
+      toast.success('Pump Asset Registered', `Unit ${payload.name} (${payload.code}) is ready for operation.`)
     } catch {
-      toast.error('Gagal Menambahkan Pompa', 'Terjadi kesalahan saat menyimpan data pompa.')
+      toast.error('Failed to Add Pump', 'An error occurred while saving pump data.')
     }
   }
 
   const handleUpdatePump = async (pumpId: string, payload: any) => {
     try {
       await updatePump(pumpId, payload)
-      toast.success('Data Pompa Diperbarui', `Konfigurasi pompa ${payload.name} berhasil disimpan.`)
+      toast.success('Pump Asset Updated', `Configuration for pump ${payload.name} saved.`)
     } catch {
-      toast.error('Gagal Memperbarui Pompa', 'Terjadi kesalahan saat memperbarui data pompa.')
+      toast.error('Failed to Update Pump', 'An error occurred while updating pump data.')
     }
   }
 
   const handleDeletePump = async (pumpId: string) => {
     try {
       await deletePump(pumpId)
-      toast.info('Pompa Dihapus', 'Unit pompa berhasil dihapus dari sistem.')
+      toast.info('Pump Asset Deleted', 'Pump unit removed from SCADA system.')
     } catch {
-      toast.error('Gagal Menghapus Pompa', 'Terjadi kesalahan saat menghapus pompa.')
+      toast.error('Failed to Delete Pump', 'An error occurred while deleting pump unit.')
     }
   }
 
   const handleAddSensor = async (payload: any) => {
     try {
       await addSensor(payload)
-      toast.success('Sensor Berhasil Terhubung', `Instrument ${payload.code} (${payload.name}) aktif.`)
+      toast.success('Sensor Connected', `Transmitter ${payload.code} (${payload.name}) is online.`)
     } catch {
-      toast.error('Gagal Menambahkan Sensor', 'Terjadi kesalahan saat menghubungkan sensor.')
+      toast.error('Failed to Add Sensor', 'An error occurred while connecting sensor transmitter.')
     }
   }
 
   const handleDeleteSensor = async (sensorId: string) => {
     try {
       await deleteSensor(sensorId)
-      toast.info('Sensor Dihapus', 'Instrumentasi sensor telah dihapus.')
+      toast.info('Sensor Removed', 'Sensor telemetry channel removed from system.')
     } catch {
-      toast.error('Gagal Menghapus Sensor', 'Terjadi kesalahan saat menghapus sensor.')
+      toast.error('Failed to Delete Sensor', 'An error occurred while removing sensor channel.')
     }
   }
 
   const handleAddGateway = async (payload: { code: string; name: string; ip: string; firmware?: string; siteId?: string }) => {
     try {
       await addGateway(payload)
-      toast.success('Gateway IoT Ditambahkan', `Perangkat ${payload.code} (${payload.name}) aktif.`)
+      toast.success('IoT Gateway Registered', `Gateway node ${payload.code} (${payload.name}) active.`)
     } catch {
-      toast.error('Gagal Menambahkan Gateway', 'Terjadi kesalahan saat mendaftarkan gateway.')
+      toast.error('Failed to Add Gateway', 'An error occurred while registering IoT gateway.')
     }
   }
 
   const handleDeleteGateway = async (gatewayId: string) => {
     try {
       await deleteGateway(gatewayId)
-      toast.info('Gateway IoT Dihapus', 'Perangkat gateway telah dihapus dari sistem.')
+      toast.info('IoT Gateway Deleted', 'Gateway node removed from SCADA system.')
     } catch {
-      toast.error('Gagal Menghapus Gateway', 'Terjadi kesalahan saat menghapus gateway.')
+      toast.error('Failed to Delete Gateway', 'An error occurred while deleting IoT gateway.')
     }
   }
 
@@ -201,21 +200,21 @@ export function App() {
 
     await toggleMotor(pumpIdOrRoomIdx, motorIndex)
     if (willBeRunning) {
-      toast.success('Pompa Dinyalakan', `Unit ${targetPump?.code || targetPump?.name || 'Pompa'} telah aktif beroperasi.`)
+      toast.success('Pump Motor Started', `Unit ${targetPump?.code || targetPump?.name || 'Pump'} is now running.`)
     } else {
-      toast.info('Pompa Dimatikan', `Unit ${targetPump?.code || targetPump?.name || 'Pompa'} dinonaktifkan.`)
+      toast.info('Pump Motor Stopped', `Unit ${targetPump?.code || targetPump?.name || 'Pump'} placed on standby.`)
     }
   }
 
   const handleEmergencyStop = async () => {
     await emergencyStop()
     setIsStopModalOpen(false)
-    toast.warning('Emergency Stop Diaktifkan', 'Seluruh unit pompa telah dimatikan seketika demi keselamatan.')
+    toast.warning('Emergency Stop Executed', 'All pump units across the plant have been stopped.')
   }
 
   const handleAcknowledgeAlarm = async (alarmId: string) => {
     await acknowledgeAlarm(alarmId)
-    toast.info('Alarm Diakui', 'Status konfirmasi alarm telah dicatat ke sistem.')
+    toast.info('Alarm Acknowledged', 'Operator acknowledgment recorded in SCADA audit trail.')
   }
 
   // If not authenticated, render Login Page
@@ -258,14 +257,11 @@ export function App() {
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-6 sm:p-8 lg:p-8 flex flex-col justify-between overflow-y-auto min-h-screen">
         <div>
-          {/* Top Navigation Bar with Capsule Tabs & User Profile */}
+          {/* Top Header with Dynamic Menu Title & Live Status */}
           <Header
             activeTab={activeTab}
+            openAlarmsCount={alarms.filter((a) => a.status === 'OPEN').length}
             onSelectTab={setActiveTab}
-            currentUser={currentUser}
-            onProfileClick={() => setIsProfileOpen(true)}
-            onOpenAddArea={() => setIsAddAreaOpen(true)}
-            onOpenAddPump={() => handleOpenAddPump()}
           />
 
           {/* TAB 0: DASHBOARD MONITORING SCADA */}

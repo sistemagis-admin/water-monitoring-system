@@ -3,81 +3,121 @@ import type { AreaRoom, PumpAsset } from '../types/pump'
 import {
   TrendingUp,
   BarChart3,
-  Gauge,
   Droplets,
   Zap,
   Thermometer,
-  Activity,
-  Fan,
   Layers,
+  Activity,
 } from 'lucide-react'
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+  Cell,
+} from 'recharts'
 
 interface PumpPerformanceChartsProps {
   currentRoom: AreaRoom
   allRooms: AreaRoom[]
 }
 
+type BarMetric = 'power' | 'flow' | 'temp'
+
+// Custom tooltip for real-time telemetry stream
+const TelemetryTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || payload.length === 0) return null
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-xs text-white p-3 rounded-xl shadow-xl border border-slate-700/60 text-xs font-mono space-y-1.5 min-w-[150px]">
+      <div className="text-[10px] text-slate-400 font-sans border-b border-slate-700/60 pb-1 flex items-center justify-between">
+        <span>Timeline</span>
+        <span className="font-semibold text-slate-300">{label}</span>
+      </div>
+      {payload.map((item: any) => (
+        <div key={item.name} className="flex items-center justify-between gap-3">
+          <span className="flex items-center gap-1.5 text-slate-300 font-sans text-[11px]">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: item.stroke || item.color }}
+            />
+            {item.name}:
+          </span>
+          <span className="font-bold text-white">
+            {item.value !== undefined ? Number(item.value).toFixed(item.name.includes('Pressure') ? 2 : 1) : '-'}{' '}
+            <span className="text-[10px] text-slate-400 font-normal">
+              {item.name.includes('Pressure') ? 'bar' : 'm³/h'}
+            </span>
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Custom tooltip for pump load comparative bar chart
+const PumpBarTooltip = ({ active, payload, unit }: any) => {
+  if (!active || !payload || payload.length === 0) return null
+  const data = payload[0].payload
+
+  return (
+    <div className="bg-slate-900/95 backdrop-blur-xs text-white p-2.5 rounded-xl shadow-xl border border-slate-700/60 text-xs font-mono min-w-[140px]">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-700/60 pb-1 mb-1 font-sans">
+        <span className="font-bold text-sky-400">{data.code}</span>
+        <span className="text-[10px] text-slate-400 truncate max-w-[100px]">{data.name}</span>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-slate-300 font-sans">Status:</span>
+        <span
+          className={`font-semibold text-[10px] uppercase ${
+            data.status === 'RUNNING'
+              ? 'text-emerald-400'
+              : data.status === 'FAULT'
+              ? 'text-rose-400'
+              : 'text-slate-400'
+          }`}
+        >
+          {data.status}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3 mt-0.5">
+        <span className="text-slate-300 font-sans">Nilai:</span>
+        <span className="font-bold text-white">
+          {Number(data.value).toFixed(1)} {unit}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
   currentRoom,
   allRooms,
 }) => {
-  const [barMetric, setBarMetric] = useState<'power' | 'flow' | 'temp'>('power')
-  const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null)
+  const [barMetric, setBarMetric] = useState<BarMetric>('power')
 
-  // 1. Line Chart Data Preparation
+  // 1. Prepare Telemetry Time-Series Data from room history
   const pressureHistory = currentRoom.history?.pressure || []
   const flowHistory = currentRoom.history?.flowRate || []
-  const pointsCount = Math.max(pressureHistory.length, flowHistory.length, 1)
+  const maxPoints = Math.max(pressureHistory.length, flowHistory.length, 1)
 
-  // Normalize heights for SVG canvas (viewBox: 0 0 500 160)
-  const svgWidth = 500
-  const svgHeight = 160
-  const paddingX = 20
-  const paddingY = 20
-  const chartW = svgWidth - paddingX * 2
-  const chartH = svgHeight - paddingY * 2
-
-  const maxP = Math.max(...pressureHistory, 6.0, 0.1)
-  const maxF = Math.max(...flowHistory, 80.0, 1.0)
-
-  // Generate SVG Points
-  const pressurePoints = pressureHistory.map((val, idx) => {
-    const x = paddingX + (idx / Math.max(pointsCount - 1, 1)) * chartW
-    const y = svgHeight - paddingY - (val / maxP) * chartH
-    return { x, y, val }
+  const telemetryData = Array.from({ length: maxPoints }, (_, idx) => {
+    const pVal = pressureHistory[idx] ?? currentRoom.pressure
+    const fVal = flowHistory[idx] ?? currentRoom.flowRate
+    const secondsAgo = (maxPoints - 1 - idx) * 2 // each sample ~2s interval
+    return {
+      time: secondsAgo === 0 ? 'Now' : `-${secondsAgo}s`,
+      pressure: Number(pVal.toFixed(2)),
+      flow: Number(fVal.toFixed(1)),
+    }
   })
 
-  const flowPoints = flowHistory.map((val, idx) => {
-    const x = paddingX + (idx / Math.max(pointsCount - 1, 1)) * chartW
-    const y = svgHeight - paddingY - (val / maxF) * chartH
-    return { x, y, val }
-  })
-
-  const pressurePath =
-    pressurePoints.length > 0
-      ? `M ${pressurePoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`
-      : ''
-
-  const flowPath =
-    flowPoints.length > 0
-      ? `M ${flowPoints.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' L ')}`
-      : ''
-
-  const pressureAreaPath =
-    pressurePoints.length > 0
-      ? `${pressurePath} L ${pressurePoints[pressurePoints.length - 1].x.toFixed(1)},${
-          svgHeight - paddingY
-        } L ${pressurePoints[0].x.toFixed(1)},${svgHeight - paddingY} Z`
-      : ''
-
-  const flowAreaPath =
-    flowPoints.length > 0
-      ? `${flowPath} L ${flowPoints[flowPoints.length - 1].x.toFixed(1)},${
-          svgHeight - paddingY
-        } L ${flowPoints[0].x.toFixed(1)},${svgHeight - paddingY} Z`
-      : ''
-
-  // 2. Bar Chart Data Preparation (Current room pumps or all pumps)
+  // 2. Prepare Comparative Pump Data for the Bar Chart
   const pumpsToDisplay: PumpAsset[] =
     currentRoom.pumps.length > 0
       ? currentRoom.pumps
@@ -87,46 +127,48 @@ export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
     switch (barMetric) {
       case 'power':
         return {
-          title: 'Konsumsi Daya Listrik (kW)',
+          title: 'Konsumsi Daya Motor (kW)',
           unit: 'kW',
           icon: Zap,
-          color: 'from-amber-500 to-amber-600',
-          bgColor: 'bg-amber-500',
-          textColor: 'text-amber-600',
-          maxVal: 30,
-          getValue: (p: PumpAsset) => p.metrics?.power_kw || 0,
+          color: '#d97706', // amber-600
+          maxDomain: 35,
+          getValue: (p: PumpAsset) => p.metrics?.power_kw || (p.status === 'RUNNING' ? 18.5 : 0),
         }
       case 'flow':
         return {
           title: 'Debit Aliran Pompa (m³/h)',
           unit: 'm³/h',
           icon: Droplets,
-          color: 'from-[#00799e] to-cyan-500',
-          bgColor: 'bg-[#00799e]',
-          textColor: 'text-[#00799e]',
-          maxVal: 75,
-          getValue: (p: PumpAsset) => p.metrics?.flow_m3h || 0,
+          color: '#0284c7', // sky-600
+          maxDomain: 80,
+          getValue: (p: PumpAsset) => p.metrics?.flow_m3h || (p.status === 'RUNNING' ? 35.0 : 0),
         }
       case 'temp':
         return {
           title: 'Suhu Operasi Motor (°C)',
           unit: '°C',
           icon: Thermometer,
-          color: 'from-rose-500 to-rose-600',
-          bgColor: 'bg-rose-500',
-          textColor: 'text-rose-600',
-          maxVal: 80,
-          getValue: (p: PumpAsset) => p.metrics?.motor_temp_c || 25,
+          color: '#e11d48', // rose-600
+          maxDomain: 90,
+          getValue: (p: PumpAsset) => p.metrics?.motor_temp_c || (p.status === 'RUNNING' ? 48.0 : 25.0),
         }
     }
   }
 
-  const currentMetricConfig = getMetricConfig()
+  const metricConfig = getMetricConfig()
+
+  const barChartData = pumpsToDisplay.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    status: p.status,
+    value: metricConfig.getValue(p),
+  }))
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 select-none">
-      {/* 1. LINE CHART: Tren Telemetri Real-Time (Columns 1-7) */}
-      <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+      {/* 1. REAL-TIME TELEMETRY STREAM (Columns 1-7) */}
+      <div className="lg:col-span-7 bg-white rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
         <div>
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
@@ -144,124 +186,107 @@ export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
               </div>
             </div>
 
-            {/* Legend Pills */}
+            {/* Current Values Badges */}
             <div className="flex items-center gap-2 text-[11px]">
-              <div className="px-2.5 py-1 rounded-lg bg-[#00799e]/10 border border-[#00799e]/20 text-[#00799e] font-semibold">
-                Tekanan ({currentRoom.pressure.toFixed(2)} bar)
+              <div className="px-2.5 py-1 rounded-lg bg-[#00799e]/10 text-[#00799e] font-semibold font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00799e]" />
+                Tekanan: {currentRoom.pressure.toFixed(2)} bar
               </div>
-              <div className="px-2.5 py-1 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-700 font-semibold">
-                Debit ({currentRoom.flowRate.toFixed(1)} m³/h)
+              <div className="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-semibold font-mono flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                Debit: {currentRoom.flowRate.toFixed(1)} m³/h
               </div>
             </div>
           </div>
 
-          {/* SVG Line Chart Canvas */}
-          <div className="relative w-full h-44 sm:h-52 overflow-hidden rounded-xl bg-slate-50/40 border border-slate-100/80">
-            <svg
-              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-              className="w-full h-full overflow-hidden"
-              preserveAspectRatio="none"
-            >
-              <defs>
-                {/* Pressure Gradient Fill */}
-                <linearGradient id="pressureGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#00799e" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#00799e" stopOpacity="0.0" />
-                </linearGradient>
-                {/* Flow Gradient Fill */}
-                <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
+          {/* Recharts Area Chart */}
+          <div className="w-full h-48 sm:h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={telemetryData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="pressStreamGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#00799e" stopOpacity={0.28} />
+                    <stop offset="90%" stopColor="#00799e" stopOpacity={0.02} />
+                    <stop offset="100%" stopColor="#00799e" stopOpacity={0.0} />
+                  </linearGradient>
+                  <linearGradient id="flowStreamGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0284c7" stopOpacity={0.22} />
+                    <stop offset="90%" stopColor="#0284c7" stopOpacity={0.02} />
+                    <stop offset="100%" stopColor="#0284c7" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
 
-              {/* Horizontal Grid lines */}
-              <line
-                x1={paddingX}
-                y1={paddingY}
-                x2={svgWidth - paddingX}
-                y2={paddingY}
-                stroke="#e2e8f0"
-                strokeDasharray="3 3"
-                strokeWidth="1"
-              />
-              <line
-                x1={paddingX}
-                y1={paddingY + chartH / 2}
-                x2={svgWidth - paddingX}
-                y2={paddingY + chartH / 2}
-                stroke="#e2e8f0"
-                strokeDasharray="3 3"
-                strokeWidth="1"
-              />
-              <line
-                x1={paddingX}
-                y1={svgHeight - paddingY}
-                x2={svgWidth - paddingX}
-                y2={svgHeight - paddingY}
-                stroke="#cbd5e1"
-                strokeWidth="1.2"
-              />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
 
-              {/* Area Fills */}
-              {flowAreaPath && (
-                <path d={flowAreaPath} fill="url(#flowGradient)" className="transition-all duration-300" />
-              )}
-              {pressureAreaPath && (
-                <path d={pressureAreaPath} fill="url(#pressureGradient)" className="transition-all duration-300" />
-              )}
-
-              {/* Flow Line */}
-              {flowPath && (
-                <path
-                  d={flowPath}
-                  fill="none"
-                  stroke="#06b6d4"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-all duration-300"
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 10, fill: '#94a3b8' }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#e2e8f0' }}
                 />
-              )}
 
-              {/* Pressure Line */}
-              {pressurePath && (
-                <path
-                  d={pressurePath}
-                  fill="none"
+                {/* Left Y-Axis for Discharge Pressure (bar) */}
+                <YAxis
+                  yAxisId="press"
+                  orientation="left"
+                  domain={[0, (dataMax: number) => Math.max(6, Math.ceil(dataMax * 1.15))]}
+                  tick={{ fontSize: 10, fill: '#00799e' }}
+                  tickFormatter={(v) => `${Number(v).toFixed(1)}`}
+                  tickLine={false}
+                  axisLine={false}
+                />
+
+                {/* Right Y-Axis for Flow Rate (m³/h) */}
+                <YAxis
+                  yAxisId="flow"
+                  orientation="right"
+                  domain={[0, (dataMax: number) => Math.max(60, Math.ceil(dataMax * 1.15))]}
+                  tick={{ fontSize: 10, fill: '#0284c7' }}
+                  tickFormatter={(v) => `${Number(v).toFixed(0)}`}
+                  tickLine={false}
+                  axisLine={false}
+                />
+
+                <Tooltip content={<TelemetryTooltip />} />
+
+                <Area
+                  yAxisId="press"
+                  type="monotone"
+                  dataKey="pressure"
+                  name="Tekanan"
                   stroke="#00799e"
-                  strokeWidth="2.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="transition-all duration-300"
+                  strokeWidth={2.5}
+                  fill="url(#pressStreamGrad)"
+                  isAnimationActive={false}
                 />
-              )}
-            </svg>
 
-            {/* Y-Axis Value Indicators */}
-            <div className="absolute left-1 top-2 text-[9px] font-mono text-slate-400">
-              {maxP.toFixed(1)} bar
-            </div>
-            <div className="absolute left-1 bottom-6 text-[9px] font-mono text-slate-400">
-              0.0 bar
-            </div>
-            <div className="absolute right-1 top-2 text-[9px] font-mono text-cyan-600">
-              {maxF.toFixed(0)} m³/h
-            </div>
+                <Area
+                  yAxisId="flow"
+                  type="monotone"
+                  dataKey="flow"
+                  name="Debit Aliran"
+                  stroke="#0284c7"
+                  strokeWidth={2.5}
+                  fill="url(#flowStreamGrad)"
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* X-Axis Time Labels */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-          <span>-30s</span>
-          <span>-20s</span>
-          <span>-10s</span>
-          <span>0s</span>
+        {/* Footer */}
+        <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+          <div className="flex items-center gap-2">
+            <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+            <span>Polling Interval: 2.0s</span>
+          </div>
+          <span>Buffer: {maxPoints} Data Points</span>
         </div>
       </div>
 
-      {/* 2. BAR CHART: Performa & Distribusi Beban Pompa (Columns 8-12) */}
-      <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+      {/* 2. PUMP UNIT LOAD PERFORMANCE (Columns 8-12) */}
+      <div className="lg:col-span-5 bg-white rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col justify-between">
         <div>
           {/* Header & Metric Switcher */}
           <div className="flex flex-wrap items-center justify-between gap-2.5 mb-4 pb-3 border-b border-slate-100">
@@ -317,56 +342,64 @@ export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
             </div>
           </div>
 
-          {/* Bar Chart Items */}
+          {/* Bar Chart or Empty State */}
           {pumpsToDisplay.length === 0 ? (
             <div className="py-8 text-center flex flex-col items-center justify-center text-slate-400">
               <Layers className="w-8 h-8 text-slate-300 mb-2" />
               <p className="text-xs font-medium text-slate-600 m-0">Belum ada pompa di stasiun ini</p>
             </div>
           ) : (
-            <div className="space-y-3.5 my-2">
-              {pumpsToDisplay.map((pump) => {
-                const isRunning = pump.status === 'RUNNING'
-                const val = currentMetricConfig.getValue(pump)
-                const percentage = Math.min(Math.round((val / currentMetricConfig.maxVal) * 100), 100)
-
-                return (
-                  <div key={pump.id} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="px-1.5 py-0.2 rounded font-mono font-semibold text-[10px] bg-slate-100 text-slate-700 border border-slate-200">
-                          {pump.code}
-                        </span>
-                        <span className="font-medium text-slate-800 truncate">{pump.name}</span>
-                      </div>
-
-                      <div className="font-mono text-xs font-semibold text-slate-900 flex items-center gap-1">
-                        <span className={isRunning ? currentMetricConfig.textColor : 'text-slate-400'}>
-                          {val.toFixed(1)} {currentMetricConfig.unit}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-normal">({percentage}%)</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Track Bar */}
-                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden relative">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${
-                          isRunning ? currentMetricConfig.color : 'from-slate-300 to-slate-300'
-                        }`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="w-full h-48 sm:h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={barChartData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    domain={[0, metricConfig.maxDomain]}
+                    tick={{ fontSize: 10, fill: '#94a3b8' }}
+                    tickLine={false}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="code"
+                    tick={{ fontSize: 11, fill: '#1e293b', fontWeight: 600 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={50}
+                  />
+                  <Tooltip content={<PumpBarTooltip unit={metricConfig.unit} />} />
+                  <Bar
+                    dataKey="value"
+                    radius={[0, 6, 6, 0]}
+                    barSize={18}
+                    isAnimationActive={false}
+                  >
+                    {barChartData.map((entry) => {
+                      const fillColor =
+                        entry.status === 'RUNNING'
+                          ? metricConfig.color
+                          : entry.status === 'FAULT'
+                          ? '#ef4444'
+                          : '#cbd5e1'
+                      return <Cell key={entry.id} fill={fillColor} />
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </div>
 
         {/* Footer Summary */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-          <span>Stasiun: <strong className="text-slate-700 font-medium">{currentRoom.name}</strong></span>
+        <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+          <span>
+            Stasiun: <strong className="text-slate-700 font-medium">{currentRoom.name}</strong>
+          </span>
           <span className="text-slate-600 font-mono">
             {pumpsToDisplay.filter((p) => p.status === 'RUNNING').length}/{pumpsToDisplay.length} Beroperasi
           </span>

@@ -1,6 +1,16 @@
 import React from 'react'
 import type { SensorItem } from '../types/pump'
-import { Radio, Plus, CheckCircle2, AlertTriangle, Trash2 } from 'lucide-react'
+import { Radio, Plus, Trash2 } from 'lucide-react'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 interface SensorManagementTableProps {
   sensors: SensorItem[]
@@ -13,155 +23,162 @@ export const SensorManagementTable: React.FC<SensorManagementTableProps> = ({
   onOpenAddSensor,
   onDeleteSensor,
 }) => {
-  const getSensorTypeBadge = (type: SensorItem['sensorType']) => {
+  const getSensorTypeVariant = (type: SensorItem['sensorType']) => {
     switch (type) {
       case 'PRESSURE_SENSOR':
-        return 'bg-[#00799e] text-white'
+        return 'default'
       case 'FLOW_METER':
-        return 'bg-emerald-600 text-white'
+        return 'secondary'
       case 'LEVEL_SENSOR':
       case 'DISTANCE_SENSOR':
-        return 'bg-cyan-600 text-white'
-      case 'TEMPERATURE_SENSOR':
-        return 'bg-amber-600 text-white'
-      case 'CURRENT_SENSOR':
-        return 'bg-purple-600 text-white'
-      case 'VIBRATION_SENSOR':
-        return 'bg-rose-600 text-white'
+        return 'outline'
       default:
-        return 'bg-slate-600 text-white'
+        return 'secondary'
     }
   }
 
   return (
-    <section className="bg-white border border-slate-200 rounded-[22px] p-5 sm:p-6 shadow-xs mb-6 select-none">
-      {/* Table Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-[#00799e] flex items-center justify-center shrink-0 shadow-xs">
-            <Radio className="w-4 h-4" />
+    <section className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs mb-6 select-none">
+      <div>
+        {/* Table Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="size-8 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center shrink-0 shadow-xs">
+              <Radio className="size-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-semibold text-base sm:text-lg text-slate-900 m-0 leading-tight">
+                  Field Instrumentation &amp; Sensors
+                </h3>
+                <Badge variant="outline" className="font-mono text-[10px] font-bold">
+                  {sensors.length} SENSORS
+                </Badge>
+              </div>
+              <span className="text-xs font-mono text-slate-400 font-normal">
+                Transmitter Channels &amp; Signal Mapping
+              </span>
+            </div>
           </div>
-          <div>
-            <h3 className="font-heading font-semibold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
-              Daftar Sensor &amp; Instrumentasi Lapangan
-            </h3>
-            <span className="text-xs text-slate-500 font-normal">
-              Sensor binding terhubung ke Room / Pompa (PRD 24.10 &amp; 24.11)
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              onClick={onOpenAddSensor}
+              className="bg-[#00799e] hover:bg-[#006887] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+            >
+              <Plus className="size-3.5" />
+              <span>Add Sensor</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Sensor Table */}
+        {sensors.length === 0 ? (
+          <div className="py-10 text-center flex flex-col items-center justify-center text-slate-400 bg-slate-50/70 border border-slate-200/80 rounded-xl">
+            <Radio className="size-8 text-slate-300 mb-2" />
+            <p className="font-bold text-sm text-slate-700 m-0">No Field Sensors Registered</p>
+            <span className="text-xs font-mono text-slate-500 mt-1">
+              Click &quot;Add Sensor&quot; above to bind field transmitter channels to station assets.
             </span>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200/90 overflow-hidden bg-white">
+            <Table>
+              <TableHeader className="bg-slate-50 border-b border-slate-200">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Tag / Code</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Instrument Name</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Sensor Type</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Bound Target</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Live Value</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Normal Threshold</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3">Status</TableHead>
+                  <TableHead className="font-mono text-[10px] uppercase font-bold text-slate-500 py-2.5 px-3 text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
+                {sensors.map((sensor) => {
+                  const isAbnormal =
+                    (sensor.minThreshold !== undefined && sensor.currentValue < sensor.minThreshold) ||
+                    (sensor.maxThreshold !== undefined && sensor.currentValue > sensor.maxThreshold)
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenAddSensor}
-            className="px-3.5 py-1.5 rounded-xl bg-[#00799e] hover:bg-[#006887] active:scale-95 text-white text-xs font-medium transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tambah Sensor</span>
-          </button>
-        </div>
+                  return (
+                    <TableRow key={sensor.id} className="hover:bg-slate-50/70 transition-colors duration-150 ease-out">
+                      <TableCell className="py-3 px-3">
+                        <Badge variant="outline" className="font-mono font-bold text-xs text-slate-900 bg-slate-100 border-slate-200">
+                          {sensor.code}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 px-3 font-semibold text-slate-900 text-xs">
+                        {sensor.name}
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        <Badge
+                          variant={getSensorTypeVariant(sensor.sensorType)}
+                          className="font-mono text-[10px] font-bold tracking-wider"
+                        >
+                          {sensor.sensorType.replace('_SENSOR', '').replace('_METER', '')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-slate-700">
+                            {sensor.targetName}
+                          </span>
+                          <Badge variant="secondary" className="font-mono text-[9px] font-bold">
+                            {sensor.targetType}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 px-3 font-mono">
+                        <span
+                          className={`font-bold text-xs sm:text-sm tabular-nums ${
+                            isAbnormal ? 'text-rose-600' : 'text-slate-900'
+                          }`}
+                        >
+                          {sensor.currentValue} <span className="text-[11px] font-normal text-slate-400">{sensor.unit}</span>
+                        </span>
+                      </TableCell>
+                      <TableCell className="py-3 px-3 font-mono text-xs text-slate-500 tabular-nums">
+                        {sensor.minThreshold !== undefined && sensor.maxThreshold !== undefined
+                          ? `${sensor.minThreshold} - ${sensor.maxThreshold} ${sensor.unit}`
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        {isAbnormal ? (
+                          <Badge variant="outline" className="font-mono text-[10px] font-bold text-rose-700 bg-rose-50 border-0 inline-flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-rose-500 led-pulse-rose"></span>
+                            ABNORMAL
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 border-0 inline-flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-emerald-500 led-pulse-emerald"></span>
+                            NORMAL
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3 px-3 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => onDeleteSensor(sensor.id)}
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+                          title="Delete Sensor"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
-
-      {/* Sensor Table */}
-      {sensors.length === 0 ? (
-        <div className="py-10 text-center flex flex-col items-center justify-center text-slate-400 bg-slate-50/70 border border-slate-100 rounded-xl">
-          <Radio className="w-8 h-8 text-slate-300 mb-2" />
-          <p className="font-bold text-sm text-slate-700 m-0">Belum Ada Sensor Terdaftar</p>
-          <span className="text-xs text-slate-500">
-            Klik tombol &quot;Tambah Sensor&quot; di atas untuk menghubungkan instrumentasi baru.
-          </span>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm text-slate-700">
-            <thead className="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3">Kode / Tag</th>
-                <th className="py-2.5 px-3">Nama Instrument</th>
-                <th className="py-2.5 px-3">Tipe Sensor</th>
-                <th className="py-2.5 px-3">Binding Terkait</th>
-                <th className="py-2.5 px-3">Nilai Live</th>
-                <th className="py-2.5 px-3">Ambang Normal</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {sensors.map((sensor) => {
-                const isAbnormal =
-                  (sensor.minThreshold !== undefined && sensor.currentValue < sensor.minThreshold) ||
-                  (sensor.maxThreshold !== undefined && sensor.currentValue > sensor.maxThreshold)
-
-                return (
-                  <tr key={sensor.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3 px-3 font-mono font-bold text-slate-900">
-                      {sensor.code}
-                    </td>
-                    <td className="py-3 px-3 font-semibold text-slate-800">
-                      {sensor.name}
-                    </td>
-                    <td className="py-3 px-3">
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider ${getSensorTypeBadge(
-                          sensor.sensorType
-                        )}`}
-                      >
-                        {sensor.sensorType.replace('_SENSOR', '').replace('_METER', '')}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-slate-700">
-                          {sensor.targetName}
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-500">
-                          {sensor.targetType}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-3 font-mono">
-                      <span
-                        className={`font-extrabold text-sm tabular-nums ${
-                          isAbnormal ? 'text-red-600' : 'text-slate-900'
-                        }`}
-                      >
-                        {sensor.currentValue} {sensor.unit}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 font-mono text-xs text-slate-500">
-                      {sensor.minThreshold !== undefined && sensor.maxThreshold !== undefined
-                        ? `${sensor.minThreshold} - ${sensor.maxThreshold} ${sensor.unit}`
-                        : '-'}
-                    </td>
-                    <td className="py-3 px-3">
-                      {isAbnormal ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white bg-red-600 inline-flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          ABNORMAL
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white bg-emerald-600 inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" />
-                          NORMAL
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => onDeleteSensor(sensor.id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                        title="Hapus Sensor"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </section>
   )
 }
