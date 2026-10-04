@@ -16,7 +16,7 @@ export const SensorManagementTable: React.FC<SensorManagementTableProps> = ({
   const getSensorTypeBadge = (type: SensorItem['sensorType']) => {
     switch (type) {
       case 'PRESSURE_SENSOR':
-        return 'bg-blue-600 text-white'
+        return 'bg-[#00799e] text-white'
       case 'FLOW_METER':
         return 'bg-emerald-600 text-white'
       case 'LEVEL_SENSOR':
@@ -38,14 +38,14 @@ export const SensorManagementTable: React.FC<SensorManagementTableProps> = ({
       {/* Table Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-[var(--amp-magenta)] text-white flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-[#00799e] flex items-center justify-center shrink-0 shadow-xs">
             <Radio className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-heading font-extrabold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
+            <h3 className="font-heading font-semibold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
               Daftar Sensor &amp; Instrumentasi Lapangan
             </h3>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 font-normal">
               Sensor binding terhubung ke Room / Pompa (PRD 24.10 &amp; 24.11)
             </span>
           </div>
@@ -54,7 +54,7 @@ export const SensorManagementTable: React.FC<SensorManagementTableProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenAddSensor}
-            className="px-3.5 py-1.5 rounded-xl bg-[var(--amp-magenta)] hover:opacity-90 active:scale-95 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-xl bg-[#00799e] hover:bg-[#006887] active:scale-95 text-white text-xs font-medium transition-all cursor-pointer shadow-2xs flex items-center gap-1.5"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Tambah Sensor</span>

@@ -6,6 +6,7 @@ export interface SelectOption {
   label: string
   sublabel?: string
   icon?: React.ReactNode
+  badge?: React.ReactNode
 }
 
 interface CustomSelectProps {
@@ -14,7 +15,11 @@ interface CustomSelectProps {
   value: string | number
   onChange: (value: any) => void
   placeholder?: string
-  colorTheme?: 'teal' | 'magenta' | 'slate'
+  colorTheme?: 'blue' | 'teal' | 'magenta' | 'slate' | 'emerald'
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+  align?: 'left' | 'right'
+  minPopoverWidth?: string
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -23,33 +28,50 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   placeholder = 'Pilih opsi...',
-  colorTheme = 'teal',
+  colorTheme = 'blue',
+  size = 'md',
+  className = '',
+  align = 'left',
+  minPopoverWidth,
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const selectedOption = options.find((opt) => opt.value === value)
+  const selectedOption = options.find((opt) => String(opt.value) === String(value))
 
   const themeBorderFocus =
-    colorTheme === 'magenta'
-      ? 'border-[var(--amp-magenta)] ring-1 ring-[var(--amp-magenta)]'
-      : colorTheme === 'teal'
-      ? 'border-[var(--amp-teal)] ring-1 ring-[var(--amp-teal)]'
+    colorTheme === 'blue' || colorTheme === 'teal'
+      ? 'border-[#00799e] ring-1 ring-[#00799e]'
+      : colorTheme === 'emerald'
+      ? 'border-emerald-500 ring-1 ring-emerald-500'
+      : colorTheme === 'magenta'
+      ? 'border-pink-600 ring-1 ring-pink-600'
       : 'border-slate-800 ring-1 ring-slate-800'
 
   const themeOptionHover =
-    colorTheme === 'magenta'
-      ? 'hover:bg-pink-50 text-slate-900 hover:text-[var(--amp-magenta)]'
-      : colorTheme === 'teal'
-      ? 'hover:bg-cyan-50 text-slate-900 hover:text-[var(--amp-teal)]'
+    colorTheme === 'blue' || colorTheme === 'teal'
+      ? 'hover:bg-[#00799e]/10 text-slate-900 hover:text-[#00799e]'
+      : colorTheme === 'emerald'
+      ? 'hover:bg-emerald-50 text-slate-900 hover:text-emerald-700'
+      : colorTheme === 'magenta'
+      ? 'hover:bg-pink-50 text-slate-900 hover:text-pink-600'
       : 'hover:bg-slate-100 text-slate-900'
 
   const themeActiveBg =
-    colorTheme === 'magenta'
-      ? 'bg-[var(--amp-magenta)] text-white font-bold'
-      : colorTheme === 'teal'
-      ? 'bg-[var(--amp-teal)] text-white font-bold'
-      : 'bg-slate-900 text-white font-bold'
+    colorTheme === 'blue' || colorTheme === 'teal'
+      ? 'bg-[#00799e] text-white font-semibold'
+      : colorTheme === 'emerald'
+      ? 'bg-emerald-600 text-white font-semibold'
+      : colorTheme === 'magenta'
+      ? 'bg-pink-600 text-white font-semibold'
+      : 'bg-slate-900 text-white font-semibold'
+
+  const sizeClasses =
+    size === 'sm'
+      ? 'px-2.5 py-1.5 text-xs rounded-xl'
+      : size === 'lg'
+      ? 'px-4 py-2.5 text-sm rounded-xl'
+      : 'px-3 py-2 text-xs rounded-xl'
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -67,9 +89,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   }, [isOpen])
 
   return (
-    <div className="relative w-full select-none" ref={dropdownRef}>
+    <div className={`relative select-none ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="block font-bold text-xs text-slate-700 mb-1">
+        <label className="block font-semibold text-xs text-slate-700 mb-1">
           {label}
         </label>
       )}
@@ -78,10 +100,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full px-3 py-2.5 bg-slate-50 border rounded-xl font-semibold text-xs text-slate-900 flex items-center justify-between transition-all cursor-pointer ${
+        className={`w-full bg-white border font-medium text-slate-800 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${sizeClasses} ${
           isOpen
             ? `bg-white ${themeBorderFocus} shadow-xs`
-            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-100/70'
+            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
         }`}
       >
         <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
@@ -96,20 +118,28 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
               · {selectedOption.sublabel}
             </span>
           )}
+          {selectedOption?.badge && (
+            <span className="shrink-0">{selectedOption.badge}</span>
+          )}
         </div>
 
         <ChevronDown
-          className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ml-1.5 ${
-            isOpen ? 'rotate-180 text-slate-700' : ''
+          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-1 ${
+            isOpen ? 'rotate-180 text-[#00799e]' : ''
           }`}
         />
       </button>
 
       {/* Dropdown Options Popover */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 top-[calc(100%+4px)] bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden animate-fade-in p-1 max-h-60 overflow-y-auto min-w-[220px]">
+        <div
+          className={`absolute z-50 top-[calc(100%+4px)] bg-white border border-slate-200/90 rounded-2xl shadow-xl overflow-hidden animate-fade-in p-1 max-h-60 overflow-y-auto ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } ${minPopoverWidth ? minPopoverWidth : 'min-w-[190px] w-full'}`}
+          style={{ minWidth: minPopoverWidth }}
+        >
           {options.map((opt) => {
-            const isSelected = opt.value === value
+            const isSelected = String(opt.value) === String(value)
 
             return (
               <button
@@ -137,9 +167,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       </span>
                     )}
                   </div>
+                  {opt.badge && !isSelected && (
+                    <span className="shrink-0">{opt.badge}</span>
+                  )}
                 </div>
 
-                {isSelected && <Check className="w-4 h-4 shrink-0 ml-2" />}
+                {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
               </button>
             )
           })}

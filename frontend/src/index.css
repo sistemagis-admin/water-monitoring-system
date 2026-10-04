@@ -1,110 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #ffffff;
-  --card: #ffffff;
-  --ink: #0f172a;
-  --mut: #64748b;
-  --line: #e2e8f0;
-  --water: #00829b;
-  --amp-teal: #00829b;
-  --amp-magenta: #c80058;
-  --amp-purple: #9c7cd4;
-  --amp-teal-soft: #e0f2f7;
-  --amp-magenta-soft: #fce7f0;
-  --amp-purple-soft: #f2edf9;
-  --on: #10b981;
-  --warn: #f59e0b;
-  --pipe: #334155;
-  --cas: #f1f5f9;
-  --mot: #1e293b;
-  --c1: #00829b;
-  --c2: #9c7cd4;
-  --c3: #c80058;
-
-  font-family: 'Figtree', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  color-scheme: light dark;
+@theme {
+  --color-ascon: #00799e;
+  --color-ascon-hover: #006887;
+  --color-ascon-active: #005670;
+  --color-ascon-light: #eff8fa;
+  --color-ascon-border: #b3e0ed;
 }
 
-:root[data-theme="dark"],
-.dark {
-  --bg: #06141b;
-  --card: #0c2230;
-  --ink: #e3f1f6;
-  --mut: #85a5b5;
-  --line: #1c3a4b;
-  --water: #25c5e4;
-  --on: #2fd493;
-  --warn: #f59e0b;
-  --pipe: #5d7f91;
-  --cas: #193647;
-  --mot: #4b7488;
-  --c1: #25c5e4;
-  --c2: #6b7bf4;
-  --c3: #f59e0b;
+:root {
+  --bg-app: #f4f7fb;
+  --bg-canvas: #ffffff;
+  --card-subtle: #f8fafc;
+  --card-dark: #0f172a;
+  --ink-primary: #0f172a;
+  --ink-secondary: #64748b;
+  --ink-muted: #94a3b8;
+  --line-border: #e2e8f0;
+  --accent-primary: #00799e;
+  --accent-primary-hover: #006887;
+  --accent-primary-soft: #eff8fa;
+  --amp-teal: #00799e;
+  --amp-magenta: #00799e;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #f43f5e;
+
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
-  background-color: var(--bg);
-  color: var(--ink);
+  background-color: var(--bg-app);
+  color: var(--ink-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 .font-heading {
-  font-family: 'Bricolage Grotesque', 'Figtree', sans-serif;
-}
-
-/* SCADA Pump SVG Animations */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes flow {
-  to {
-    stroke-dashoffset: -16px;
-  }
-}
-
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
-@keyframes shakeMotor {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(0.7px);
-  }
-}
-
-.animate-spin-local {
-  animation: spin var(--spd, 1s) linear infinite;
-  transform-origin: 0px 0px;
-  transform-box: view-box;
-}
-
-.animate-pipe-flow {
-  animation: flow var(--fs, 1s) linear infinite;
-}
-
-.animate-pulse-led {
-  animation: pulseGlow 1s infinite;
-}
-
-.animate-shake-motor {
-  animation: shakeMotor 0.12s linear infinite;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
 /* Custom Scrollbars */
@@ -116,6 +52,97 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--line);
+  background: #cbd5e1;
   border-radius: 9999px;
 }
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(32px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes flowStroke {
+  from {
+    stroke-dashoffset: 48;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes waveMotion {
+  0% {
+    transform: translateX(0) translateZ(0) scaleY(1);
+  }
+  50% {
+    transform: translateX(-25%) translateZ(0) scaleY(0.9);
+  }
+  100% {
+    transform: translateX(-50%) translateZ(0) scaleY(1);
+  }
+}
+
+@keyframes waterBubbles {
+  0% {
+    transform: translateY(10px) scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-24px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-pipe-flow {
+  animation: flowStroke 1.2s linear infinite;
+}
+
+.animate-water-wave {
+  animation: waveMotion 4s ease-in-out infinite;
+}
+
+.animate-bubble-1 {
+  animation: waterBubbles 2.4s ease-in-out infinite;
+}
+
+.animate-bubble-2 {
+  animation: waterBubbles 1.8s ease-in-out 0.6s infinite;
+}
+
+.animate-bubble-3 {
+  animation: waterBubbles 2.1s ease-in-out 1.2s infinite;
+}
+
+

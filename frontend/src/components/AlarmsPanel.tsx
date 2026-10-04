@@ -26,7 +26,7 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
       case 'MEDIUM':
         return 'bg-amber-500 text-white'
       case 'LOW':
-        return 'bg-blue-600 text-white'
+        return 'bg-[#00799e] text-white'
     }
   }
 
@@ -35,14 +35,14 @@ export const AlarmsPanel: React.FC<AlarmsPanelProps> = ({ alarms, onAcknowledge 
       {/* Panel Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-2xs">
             <AlertOctagon className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-heading font-extrabold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
+            <h3 className="font-heading font-semibold text-lg sm:text-xl text-slate-900 m-0 leading-tight">
               Panel Alarm &amp; Kondisi Abnormal
             </h3>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 font-normal">
               Evaluasi rule engine otomatis real-time Fastify Backend
             </span>
           </div>

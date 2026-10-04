@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { AreaRoom, DeviceGateway, AddSensorInput, SensorType } from '../types/pump'
 import { CustomSelect, type SelectOption } from './CustomSelect'
-import { Radio, X, Check, Activity, Layers, Disc } from 'lucide-react'
+import { Radio, X, Activity, Layers, Disc, Lock } from 'lucide-react'
 
 interface AddSensorModalProps {
   isOpen: boolean
@@ -28,12 +29,18 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
   const [deviceId, setDeviceId] = useState(gateways[0]?.id || 'gw-001')
   const [minThreshold, setMinThreshold] = useState(0.5)
   const [maxThreshold, setMaxThreshold] = useState(6.0)
-  const [isSuccess, setIsSuccess] = useState(false)
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
+      setCode(`PT-0${Math.floor(Math.random() * 90 + 10)}`)
+      setName('')
+      setSensorType('PRESSURE_SENSOR')
+      setMetricCode('pressure_bar')
+      setUnit('bar')
+      setMinThreshold(0.5)
+      setMaxThreshold(6.0)
     } else {
       document.body.style.overflow = 'unset'
     }
@@ -44,7 +51,7 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
 
   if (!isOpen) return null
 
-  // Auto configure metric code and unit when sensor type changes
+  // Auto configure metric code and unit when sensor type changes (Fixed/ReadOnly)
   const handleSensorTypeChange = (type: SensorType) => {
     setSensorType(type)
     switch (type) {
@@ -107,12 +114,12 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
     {
       value: 'AREA',
       label: 'Ruangan / Area',
-      icon: <Layers className="w-3.5 h-3.5 text-[var(--amp-magenta)]" />,
+      icon: <Layers className="w-3.5 h-3.5 text-[#00799e]" />,
     },
     {
       value: 'PUMP',
       label: 'Asset Pompa',
-      icon: <Disc className="w-3.5 h-3.5 text-[var(--amp-magenta)]" />,
+      icon: <Disc className="w-3.5 h-3.5 text-[#00799e]" />,
     },
   ]
 
@@ -152,32 +159,28 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
       maxThreshold: Number(maxThreshold),
     })
 
-    setIsSuccess(true)
-    setTimeout(() => {
-      setIsSuccess(false)
-      onClose()
-    }, 800)
+    onClose()
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs select-none"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="w-full max-w-xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[92vh]">
+      <div className="w-full max-w-xl bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-fade-in flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[var(--amp-magenta)] text-white flex items-center justify-center shadow-xs">
+            <div className="w-10 h-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs">
               <Radio className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-heading font-extrabold text-lg text-slate-900 m-0 leading-tight">
+              <h3 className="font-heading font-semibold text-base text-slate-900 m-0 leading-tight">
                 Tambah Sensor &amp; Binding
               </h3>
-              <p className="text-xs text-slate-500 m-0 mt-0.5">
+              <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
                 Konfigurasi Instrumentasi &amp; Sensor Binding
               </p>
             </div>
@@ -187,23 +190,16 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
             onClick={onClose}
             className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Modal Form Body */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs">
-          {isSuccess && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 font-bold flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600" />
-              <span>Sensor berhasil didaftarkan dan dihubungkan!</span>
-            </div>
-          )}
-
           {/* Row 1: Code & Type */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block font-bold text-slate-700 mb-1">
+              <label className="block font-medium text-slate-700 mb-1">
                 Kode / Tag Sensor *
               </label>
               <input
@@ -212,7 +208,7 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="Contoh: PT-04 / FT-04"
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold text-slate-900 focus:bg-white focus:border-[var(--amp-magenta)] focus:ring-1 focus:ring-[var(--amp-magenta)] outline-hidden transition-all"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
               />
             </div>
 
@@ -222,14 +218,14 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                 options={sensorTypeOptions}
                 value={sensorType}
                 onChange={(val) => handleSensorTypeChange(val as SensorType)}
-                colorTheme="magenta"
+                colorTheme="blue"
               />
             </div>
           </div>
 
           {/* Row 2: Name */}
           <div>
-            <label className="block font-bold text-slate-700 mb-1">
+            <label className="block font-medium text-slate-700 mb-1">
               Nama Lengkap Sensor *
             </label>
             <input
@@ -238,13 +234,13 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Discharge Pressure Transmitter Booster Line B"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:border-[var(--amp-magenta)] focus:ring-1 focus:ring-[var(--amp-magenta)] outline-hidden transition-all"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
             />
           </div>
 
           {/* Row 3: Sensor Binding (Target Type: Area or Pump Asset) */}
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-            <span className="block font-extrabold text-slate-800 text-[11px] uppercase tracking-wider">
+            <span className="block font-semibold text-slate-800 text-xs">
               Target Sensor Binding
             </span>
 
@@ -263,7 +259,7 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                       setTargetId(allPumps[0]?.id || 'pump-01')
                     }
                   }}
-                  colorTheme="magenta"
+                  colorTheme="blue"
                 />
               </div>
 
@@ -273,13 +269,13 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                   options={targetObjectOptions}
                   value={targetId}
                   onChange={(val) => setTargetId(val)}
-                  colorTheme="magenta"
+                  colorTheme="blue"
                 />
               </div>
             </div>
           </div>
 
-          {/* Row 4: Gateway IoT & Unit */}
+          {/* Row 4: Gateway IoT & Unit (READ ONLY / LOCKED) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <CustomSelect
@@ -287,19 +283,27 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                 options={gatewayOptions}
                 value={deviceId}
                 onChange={(val) => setDeviceId(val)}
-                colorTheme="magenta"
+                colorTheme="blue"
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">
-                Satuan Ukur (Unit)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block font-medium text-slate-700">
+                  Satuan Ukur (Unit)
+                </label>
+                <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 font-normal">
+                  <Lock className="w-2.5 h-2.5 text-slate-400" />
+                  Otomatis
+                </span>
+              </div>
               <input
                 type="text"
+                readOnly
+                disabled
                 value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-bold text-slate-900 focus:bg-white focus:border-[var(--amp-magenta)] focus:ring-1 focus:ring-[var(--amp-magenta)] outline-hidden transition-all"
+                title="Satuan ukur terkunci otomatis mengikuti tipe instrumentasi sensor"
+                className="w-full px-3 py-2 bg-slate-100/90 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-600 cursor-not-allowed select-none outline-hidden"
               />
             </div>
           </div>
@@ -308,13 +312,13 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
           <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
             <div className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-amber-600" />
-              <span className="block font-extrabold text-slate-800 text-[11px] uppercase tracking-wider">
+              <span className="block font-semibold text-slate-800 text-xs">
                 Ambang Batas Operasional Normal (Threshold)
               </span>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-medium text-[11px] text-slate-500 mb-0.5">
+                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
                   Batas Bawah Normal (Min)
                 </label>
                 <input
@@ -322,11 +326,11 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                   step="0.1"
                   value={minThreshold}
                   onChange={(e) => setMinThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-bold text-slate-900 outline-hidden"
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-semibold text-slate-900 outline-hidden focus:border-[#00799e]"
                 />
               </div>
               <div>
-                <label className="block font-medium text-[11px] text-slate-500 mb-0.5">
+                <label className="block font-normal text-[11px] text-slate-500 mb-0.5">
                   Batas Atas Alarm (Max)
                 </label>
                 <input
@@ -334,7 +338,7 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
                   step="0.1"
                   value={maxThreshold}
                   onChange={(e) => setMaxThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-bold text-slate-900 outline-hidden"
+                  className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg font-mono text-xs font-semibold text-slate-900 outline-hidden focus:border-[#00799e]"
                 />
               </div>
             </div>
@@ -345,19 +349,20 @@ export const AddSensorModal: React.FC<AddSensorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-xs font-extrabold text-white bg-[var(--amp-magenta)] hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-xs"
+              className="px-5 py-2 rounded-xl text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] active:scale-95 transition-all cursor-pointer shadow-xs"
             >
               Simpan Sensor
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

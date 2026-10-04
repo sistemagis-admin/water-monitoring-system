@@ -21,12 +21,16 @@ export const TrendChart: React.FC<TrendChartProps> = ({ stations }) => {
     { ratio: 0.0, label: `0.0 ${unit}` },
   ]
 
-  if (!stations || stations.length === 0) {
+  const totalPumps = stations.reduce((acc, s) => acc + s.pumps.length, 0)
+
+  if (!stations || stations.length === 0 || totalPumps === 0) {
     return (
-      <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-8 shadow-xs text-center flex flex-col items-center justify-center text-slate-400">
-        <Activity className="w-8 h-8 text-slate-400 mb-2 animate-pulse" />
-        <p className="font-bold text-sm text-slate-700 m-0">Menunggu Telemetri Stasiun Pompa...</p>
-        <span className="text-xs text-slate-500">Memuat topologi plant dan aliran telemetri dari backend.</span>
+      <section className="bg-white border border-slate-200 rounded-[22px] p-8 shadow-xs text-center flex flex-col items-center justify-center text-slate-400">
+        <Activity className="w-8 h-8 text-slate-400 mb-2" />
+        <p className="font-bold text-sm text-slate-700 m-0">Grafik Telemetri Standby</p>
+        <span className="text-xs text-slate-500 max-w-md">
+          Belum ada pompa aktif terpasang. Grafik pembacaan tekanan &amp; debit akan mulai mengalir secara real-time setelah unit pompa didaftarkan di menu Pompa &amp; Area.
+        </span>
       </section>
     )
   }

@@ -97,54 +97,28 @@ export function usePumpSystem() {
                 remoteAllowed: ast.capabilities?.remote_control_allowed ?? true,
                 commandState: 'IDLE',
                 metrics: {
-                  pressure_bar: metrics.pressure_bar || (isRunning ? 3.5 : 0.15),
-                  flow_m3h: metrics.flow_m3h || (isRunning ? 45.0 : 0),
+                  pressure_bar: metrics.pressure_bar || (isRunning ? 3.5 : 0.0),
+                  flow_m3h: metrics.flow_m3h || (isRunning ? 45.0 : 0.0),
                   tank_level_pct: metrics.tank_level_pct || 75.0,
-                  power_kw: metrics.power_kw || (isRunning ? 18.5 : 0),
-                  current_a: metrics.current_a || (isRunning ? 32.0 : 0),
-                  voltage_v: metrics.voltage_v || 382.0,
-                  frequency_hz: metrics.frequency_hz || (isRunning ? 50.0 : 0),
-                  motor_temp_c: metrics.motor_temp_c || (isRunning ? 45.0 : 26.0),
-                  energy_kwh: metrics.energy_kwh || 1000.0,
+                  power_kw: metrics.power_kw || (isRunning ? 18.5 : 0.0),
+                  current_a: metrics.current_a || (isRunning ? 32.0 : 0.0),
+                  voltage_v: metrics.voltage_v || 380.0,
+                  frequency_hz: metrics.frequency_hz || (isRunning ? 50.0 : 0.0),
+                  motor_temp_c: metrics.motor_temp_c || (isRunning ? 45.0 : 25.0),
+                  energy_kwh: metrics.energy_kwh || 0.0,
                 },
               }
             })
 
-            // Ensure 2 pump slots per room for symmetrical SCADA control panel
-            while (parsedPumps.length < 2) {
-              const pSlot = parsedPumps.length + 1
-              parsedPumps.push({
-                id: `pump-${a.code}-${pSlot}`,
-                code: `P-${a.code}-${pSlot}`,
-                name: `Pump Aux ${pSlot}`,
-                areaId: a.id,
-                areaName: a.name,
-                motorIndex: (parsedPumps.length as 0 | 1),
-                status: 'STOPPED',
-                controlEnabled: true,
-                remoteAllowed: true,
-                commandState: 'IDLE',
-                metrics: {
-                  pressure_bar: 0.15,
-                  flow_m3h: 0,
-                  tank_level_pct: 75.0,
-                  power_kw: 0,
-                  current_a: 0,
-                  voltage_v: 380.0,
-                  frequency_hz: 0,
-                  motor_temp_c: 25.0,
-                  energy_kwh: 500.0,
-                },
-              })
-            }
+            const m1Run = parsedPumps[0]?.status === 'RUNNING' ? 1 : 0
+            const m2Run = parsedPumps[1]?.status === 'RUNNING' ? 1 : 0
 
-            const p1 = parsedPumps[0]
-            const p2 = parsedPumps[1]
-            const m1Run = p1.status === 'RUNNING' ? 1 : 0
-            const m2Run = p2.status === 'RUNNING' ? 1 : 0
-
-            const avgP = Math.max(p1.metrics.pressure_bar, p2.metrics.pressure_bar)
-            const sumF = p1.metrics.flow_m3h + p2.metrics.flow_m3h
+            const avgP =
+              parsedPumps.length > 0
+                ? Math.max(...parsedPumps.map((p) => p.metrics.pressure_bar))
+                : 0.0
+            const sumF = parsedPumps.reduce((acc, p) => acc + p.metrics.flow_m3h, 0)
+            const sumPow = parsedPumps.reduce((acc, p) => acc + p.metrics.power_kw, 0)
 
             return {
               id: a.id,
@@ -156,14 +130,14 @@ export function usePumpSystem() {
               baseFlow: sumF > 5 ? sumF : 50.0,
               color: colorList[idx % colorList.length],
               tankLevel: 75.0,
-              motors: [m1Run as 0 | 1, m2Run as 0 | 1],
+              motors: [m1Run, m2Run],
               pressure: avgP,
               flowRate: sumF,
-              pumps: [p1, p2],
+              pumps: parsedPumps,
               history: {
                 pressure: Array.from({ length: MAX_HISTORY_POINTS }, () => avgP),
                 flowRate: Array.from({ length: MAX_HISTORY_POINTS }, () => sumF),
-                power: Array.from({ length: MAX_HISTORY_POINTS }, () => p1.metrics.power_kw + p2.metrics.power_kw),
+                power: Array.from({ length: MAX_HISTORY_POINTS }, () => sumPow),
               },
             }
           })
@@ -401,26 +375,26 @@ export function usePumpSystem() {
         prevRooms.map((room) => {
           const m1Running = room.pumps[0]?.status === 'RUNNING' ? 1 : 0
           const m2Running = room.pumps[1]?.status === 'RUNNING' ? 1 : 0
-          const activeMotorCount = m1Running + m2Running
+          const activeMotorCount = room.pumps.filter((p) => p.status === 'RUNNING').length
 
           const targetP =
             activeMotorCount > 0
               ? room.basePressure + (activeMotorCount > 1 ? 0.65 : 0)
-              : 0.15
+              : 0.0
           const targetF =
             activeMotorCount > 0
               ? room.baseFlow * (activeMotorCount > 1 ? 1.7 : 1)
-              : 0
+              : 0.0
 
           const jitter = activeMotorCount > 0 ? 1 : 0
           const noiseP = (Math.random() - 0.5) * 0.08 * jitter
           const noiseF = (Math.random() - 0.5) * 1.5 * jitter
 
-          let nextP = room.pressure + (targetP - room.pressure) * 0.35 + noiseP
+          let nextP = activeMotorCount > 0 ? room.pressure + (targetP - room.pressure) * 0.35 + noiseP : 0.0
           let nextF =
             activeMotorCount > 0
               ? room.flowRate + (targetF - room.flowRate) * 0.35 + noiseF
-              : Math.max(0, room.flowRate * 0.5 - 0.2)
+              : 0.0
 
           if (nextF < 0.05) nextF = 0
           if (nextP < 0) nextP = 0
@@ -428,33 +402,27 @@ export function usePumpSystem() {
           const newPressHist = [...room.history.pressure.slice(1), nextP]
           const newFlowHist = [...room.history.flowRate.slice(1), nextF]
 
-          const totalPower =
-            (m1Running ? (room.pumps[0]?.metrics.power_kw || 18.5) : 0) +
-            (m2Running ? (room.pumps[1]?.metrics.power_kw || 18.5) : 0)
+          const totalPower = room.pumps.reduce(
+            (acc, p) => acc + (p.status === 'RUNNING' ? p.metrics.power_kw || 18.5 : 0),
+            0
+          )
           const newPowerHist = [...room.history.power.slice(1), totalPower]
 
-          const updatedPumps: [PumpAsset, PumpAsset] = [
-            {
-              ...room.pumps[0],
+          const updatedPumps: PumpAsset[] = room.pumps.map((pump) => {
+            const isRun = pump.status === 'RUNNING'
+            return {
+              ...pump,
               metrics: {
-                ...room.pumps[0].metrics,
-                pressure_bar: m1Running ? nextP : 0.15,
-                flow_m3h: m1Running ? nextF * (activeMotorCount > 1 ? 0.55 : 1) : 0,
+                ...pump.metrics,
+                pressure_bar: isRun ? nextP : 0.0,
+                flow_m3h: isRun ? (activeMotorCount > 1 ? nextF / activeMotorCount : nextF) : 0.0,
               },
-            },
-            {
-              ...room.pumps[1],
-              metrics: {
-                ...room.pumps[1].metrics,
-                pressure_bar: m2Running ? nextP : 0.15,
-                flow_m3h: m2Running ? nextF * (activeMotorCount > 1 ? 0.45 : 1) : 0,
-              },
-            },
-          ]
+            }
+          })
 
           return {
             ...room,
-            motors: [m1Running as 0 | 1, m2Running as 0 | 1],
+            motors: [m1Running, m2Running],
             pressure: nextP,
             flowRate: nextF,
             pumps: updatedPumps,
@@ -493,44 +461,65 @@ export function usePumpSystem() {
 
   // Toggle pump motor power (Issues remote command to Fastify backend)
   const togglePumpPower = useCallback(
-    async (roomIndex: number, motorIndex: 0 | 1) => {
-      const targetRoom = rooms[roomIndex]
-      if (!targetRoom) return
-      const targetPump = targetRoom.pumps[motorIndex]
-      if (!targetPump) return
+    async (pumpIdOrRoomIdx: string | number, secondaryMotorIdx?: number) => {
+      let targetPumpId: string | undefined
+      let willBeRunning = false
 
-      const willBeRunning = targetPump.status !== 'RUNNING'
-      const desiredState = willBeRunning ? 'ON' : 'OFF'
+      setRooms((prevRooms) => {
+        let targetPump: PumpAsset | undefined
+        let targetRoom: AreaRoom | undefined
 
-      // 1. Optimistic UI update
-      setRooms((prev) =>
-        prev.map((room, rIdx) => {
-          if (rIdx !== roomIndex) return room
-
-          const updatedPumps = [...room.pumps] as [PumpAsset, PumpAsset]
-          updatedPumps[motorIndex] = {
-            ...targetPump,
-            status: willBeRunning ? 'RUNNING' : 'STOPPED',
-            commandState: 'SENT',
-            metrics: {
-              ...targetPump.metrics,
-              power_kw: willBeRunning ? 18.0 + Math.random() * 6 : 0,
-              current_a: willBeRunning ? 30.0 + Math.random() * 12 : 0,
-              frequency_hz: willBeRunning ? 50.0 : 0,
-            },
+        if (typeof pumpIdOrRoomIdx === 'string') {
+          for (const room of prevRooms) {
+            const found = room.pumps.find((p) => p.id === pumpIdOrRoomIdx)
+            if (found) {
+              targetPump = found
+              targetRoom = room
+              break
+            }
           }
+        } else {
+          targetRoom = prevRooms[pumpIdOrRoomIdx]
+          if (targetRoom && secondaryMotorIdx !== undefined) {
+            targetPump = targetRoom.pumps[secondaryMotorIdx]
+          }
+        }
+
+        if (!targetPump || !targetRoom) return prevRooms
+
+        targetPumpId = targetPump.id
+        willBeRunning = targetPump.status !== 'RUNNING'
+
+        return prevRooms.map((room) => {
+          if (room.id !== targetRoom!.id) return room
+
+          const updatedPumps = room.pumps.map((p) => {
+            if (p.id !== targetPump!.id) return p
+            return {
+              ...p,
+              status: (willBeRunning ? 'RUNNING' : 'STOPPED') as PumpStatus,
+              commandState: 'SENT' as const,
+              metrics: {
+                ...p.metrics,
+                power_kw: willBeRunning ? 18.0 + Math.random() * 6 : 0,
+                current_a: willBeRunning ? 30.0 + Math.random() * 12 : 0,
+                frequency_hz: willBeRunning ? 50.0 : 0,
+              },
+            }
+          })
 
           return {
             ...room,
             pumps: updatedPumps,
           }
         })
-      )
+      })
 
       // 2. Send API Command to Backend
-      if (isBackendOnline && targetPump.id) {
+      if (isBackendOnline && targetPumpId) {
+        const desiredState = willBeRunning ? 'ON' : 'OFF'
         try {
-          await api.assets.issuePowerCommand(targetPump.id, {
+          await api.assets.issuePowerCommand(targetPumpId, {
             desired_state: desiredState,
             confirmation: true,
             note: `Operator UI command ${desiredState}`,
@@ -540,7 +529,7 @@ export function usePumpSystem() {
         }
       }
     },
-    [rooms, isBackendOnline]
+    [isBackendOnline]
   )
 
   // Emergency stop all pumps across all rooms
@@ -624,7 +613,7 @@ export function usePumpSystem() {
           remoteAllowed: input.controlEnabled,
           commandState: 'IDLE',
           metrics: {
-            pressure_bar: 0.15,
+            pressure_bar: 0.0,
             flow_m3h: 0.0,
             tank_level_pct: targetRoom.tankLevel || 75,
             power_kw: 0.0,
@@ -632,16 +621,12 @@ export function usePumpSystem() {
             voltage_v: 380.0,
             frequency_hz: 0.0,
             motor_temp_c: 25.0,
-            energy_kwh: 120.0,
+            energy_kwh: 0.0,
           },
         }
 
-        const updatedPumps = [...targetRoom.pumps] as [PumpAsset, PumpAsset]
-        if (input.motorIndex === 0) {
-          updatedPumps[0] = newPumpAsset
-        } else {
-          updatedPumps[1] = newPumpAsset
-        }
+        const filteredExisting = targetRoom.pumps.filter((p) => p.id !== resolvedAssetId)
+        const updatedPumps = [...filteredExisting, newPumpAsset]
 
         const updatedRoom: AreaRoom = {
           ...targetRoom,
@@ -748,6 +733,253 @@ export function usePumpSystem() {
     [isBackendOnline]
   )
 
+  // Add IoT Gateway dynamically
+  const addGateway = useCallback(
+    async (input: { code: string; name: string; ip: string; firmware?: string; siteId?: string }) => {
+      let resolvedGatewayId = `gw-${Date.now()}`
+      if (isBackendOnline) {
+        try {
+          const res = await api.devices.create({
+            site_id: siteInfo?.id || '00000000-0000-0000-0000-000000000001',
+            code: input.code,
+            name: input.name,
+            device_type: 'EDGE_GATEWAY',
+            firmware_version: input.firmware || '1.0.4',
+            config: { ip_address: input.ip },
+          })
+          if (res?.success && res.data?.id) {
+            resolvedGatewayId = res.data.id
+          }
+        } catch (err) {
+          console.warn('Backend gateway create error:', err)
+        }
+      }
+
+      const newGw: DeviceGateway = {
+        id: resolvedGatewayId,
+        code: input.code,
+        name: input.name,
+        siteId: input.siteId || siteInfo?.name || 'WTP Plant Bandung',
+        status: 'ONLINE',
+        lastSeen: new Date().toLocaleTimeString('id-ID').replace(/\./g, ':'),
+        firmware: input.firmware || '1.0.4',
+        rssi: -58,
+        ip: input.ip || '192.168.1.100',
+      }
+
+      setGateways((prev) => [...prev, newGw])
+    },
+    [isBackendOnline, siteInfo]
+  )
+
+  // Delete IoT Gateway
+  const deleteGateway = useCallback(
+    async (gatewayId: string) => {
+      setGateways((prev) => prev.filter((g) => g.id !== gatewayId))
+      if (isBackendOnline) {
+        api.devices.delete(gatewayId).catch(console.warn)
+      }
+    },
+    [isBackendOnline]
+  )
+
+  // Delete pump asset (PRD Section 32 & Appendix B)
+  const deletePump = useCallback(
+    async (pumpId: string) => {
+      if (isBackendOnline) {
+        try {
+          await api.assets.delete(pumpId)
+          await fetchBackendData()
+          return
+        } catch (err) {
+          console.warn('Backend pump asset delete error:', err)
+        }
+      }
+
+      // Optimistic update for UI state: remove from room.pumps completely
+      setRooms((prevRooms) =>
+        prevRooms.map((room) => ({
+          ...room,
+          pumps: room.pumps.filter((p) => p.id !== pumpId),
+        }))
+      )
+    },
+    [isBackendOnline, fetchBackendData]
+  )
+
+  // Update pump asset
+  const updatePump = useCallback(
+    async (
+      pumpId: string,
+      payload: {
+        code: string
+        name: string
+        subtype?: PumpSubtype
+        areaId?: string
+        deviceId?: string
+        ratedPowerKw?: number
+        ratedFlowM3h?: number
+        ratedPressureBar?: number
+        controlEnabled?: boolean
+      }
+    ) => {
+      if (isBackendOnline) {
+        try {
+          await api.assets.update(pumpId, {
+            code: payload.code,
+            name: payload.name,
+            asset_subtype: payload.subtype,
+            area_id: payload.areaId,
+            device_id: payload.deviceId,
+            metadata: {
+              rated_power_kw: payload.ratedPowerKw,
+              rated_flow_m3h: payload.ratedFlowM3h,
+              rated_pressure_bar: payload.ratedPressureBar,
+              control_enabled: payload.controlEnabled,
+            },
+          })
+          await fetchBackendData()
+          return
+        } catch (err) {
+          console.warn('Backend pump asset update error:', err)
+        }
+      }
+
+      // Optimistic update for UI
+      setRooms((prevRooms) => {
+        let targetPump: PumpAsset | null = null
+        for (const r of prevRooms) {
+          const found = r.pumps.find((p) => p.id === pumpId)
+          if (found) {
+            targetPump = found
+            break
+          }
+        }
+        if (!targetPump) return prevRooms
+
+        const updatedPump: PumpAsset = {
+          ...targetPump,
+          code: payload.code,
+          name: payload.name,
+          controlEnabled: payload.controlEnabled ?? targetPump.controlEnabled,
+          remoteAllowed: payload.controlEnabled ?? targetPump.remoteAllowed,
+        }
+
+        if (payload.areaId && payload.areaId !== targetPump.areaId) {
+          return prevRooms.map((room) => {
+            if (room.id === targetPump!.areaId) {
+              return { ...room, pumps: room.pumps.filter((p) => p.id !== pumpId) }
+            }
+            if (room.id === payload.areaId) {
+              return {
+                ...room,
+                pumps: [
+                  ...room.pumps,
+                  { ...updatedPump, areaId: room.id, areaName: room.name },
+                ],
+              }
+            }
+            return room
+          })
+        }
+
+        return prevRooms.map((room) => ({
+          ...room,
+          pumps: room.pumps.map((p) => (p.id === pumpId ? updatedPump : p)),
+        }))
+      })
+    },
+    [isBackendOnline, fetchBackendData]
+  )
+
+  // Add new area / room dynamically
+  const addArea = useCallback(
+    async (input: { code: string; name: string; description?: string }) => {
+      let resolvedId = `area-${Date.now()}`
+      if (isBackendOnline) {
+        try {
+          const res = await api.areas.create({
+            site_id: siteInfo?.id || '00000000-0000-0000-0000-000000000001',
+            code: input.code,
+            name: input.name,
+            description: input.description,
+          })
+          if (res?.success && res.data?.id) {
+            resolvedId = res.data.id
+          }
+        } catch (err) {
+          console.warn('Backend area create error:', err)
+        }
+      }
+
+      const colorList = ['var(--c1)', 'var(--c2)', 'var(--c3)', '#10B981', '#F59E0B', '#8B5CF6']
+      const newRoom: AreaRoom = {
+        id: resolvedId,
+        code: input.code,
+        name: input.name,
+        number: `0${rooms.length + 1}`,
+        sensorTag: `AREA-${input.code}`,
+        basePressure: 3.5,
+        baseFlow: 50.0,
+        color: colorList[rooms.length % colorList.length],
+        tankLevel: 75.0,
+        motors: [0, 0],
+        pressure: 0.0,
+        flowRate: 0.0,
+        pumps: [],
+        history: {
+          pressure: Array.from({ length: MAX_HISTORY_POINTS }, () => 0),
+          flowRate: Array.from({ length: MAX_HISTORY_POINTS }, () => 0),
+          power: Array.from({ length: MAX_HISTORY_POINTS }, () => 0),
+        },
+      }
+
+      setRooms((prev) => [...prev, newRoom])
+    },
+    [isBackendOnline, siteInfo, rooms.length]
+  )
+
+  // Delete area / room
+  const deleteArea = useCallback(
+    async (areaId: string) => {
+      if (isBackendOnline) {
+        try {
+          await api.areas.delete(areaId)
+        } catch (err) {
+          console.warn('Backend area delete error:', err)
+        }
+      }
+      setRooms((prev) => prev.filter((r) => r.id !== areaId))
+    },
+    [isBackendOnline]
+  )
+
+  // Update area / room
+  const updateArea = useCallback(
+    async (areaId: string, input: { code?: string; name?: string; description?: string }) => {
+      if (isBackendOnline) {
+        try {
+          await api.areas.update(areaId, input)
+        } catch (err) {
+          console.warn('Backend area update error:', err)
+        }
+      }
+
+      setRooms((prev) =>
+        prev.map((r) => {
+          if (r.id !== areaId) return r
+          return {
+            ...r,
+            code: input.code !== undefined ? input.code : r.code,
+            name: input.name !== undefined ? input.name : r.name,
+            sensorTag: input.code !== undefined ? `AREA-${input.code}` : r.sensorTag,
+          }
+        })
+      )
+    },
+    [isBackendOnline]
+  )
+
   // Acknowledge alarm
   const acknowledgeAlarm = useCallback(
     async (alarmId: string) => {
@@ -832,9 +1064,16 @@ export function usePumpSystem() {
     login,
     logout,
     reconnectBackend: fetchBackendData,
+    addArea,
+    updateArea,
+    deleteArea,
     addPump,
+    updatePump,
+    deletePump,
     addSensor,
     deleteSensor,
+    addGateway,
+    deleteGateway,
     togglePumpPower,
     toggleMotor: togglePumpPower,
     emergencyStop,

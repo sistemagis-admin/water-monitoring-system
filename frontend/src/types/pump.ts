@@ -35,10 +35,10 @@ export interface LocationStation {
   sensorTag: string
   basePressure: number
   baseFlow: number
-  motors: [number, number]
+  motors: number[]
   color: string
   tankLevel: number
-  pumps: [PumpAsset, PumpAsset]
+  pumps: PumpAsset[]
   pressure: number
   flowRate: number
   history: {
@@ -158,4 +158,33 @@ export interface SimulationStats {
   lastUpdated: string
   runningMotors?: number
   totalMotors?: number
+}
+
+export interface AlarmRuleItem {
+  id: string
+  code: string
+  name: string
+  siteId?: string
+  areaId?: string
+  assetId?: string
+  metricCode: string
+  condition: '>' | '<' | '>=' | '<=' | '==' | '!='
+  threshold: number
+  unit: string
+  severity: AlarmSeverity
+  debounceSeconds: number
+  isEnabled: boolean
+  description?: string
+}
+
+export interface SystemUserItem {
+  id: string
+  email: string
+  fullName: string
+  role: 'SUPER_ADMIN' | 'OPERATOR' | 'ENGINEER' | 'VIEWER'
+  status: 'ACTIVE' | 'INACTIVE'
+  siteId?: string
+  siteName?: string
+  createdAt?: string
+  lastLogin?: string
 }

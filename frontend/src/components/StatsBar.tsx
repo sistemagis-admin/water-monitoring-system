@@ -17,7 +17,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
         </small>
         <div className="flex items-baseline gap-1.5">
           <b className="font-heading font-extrabold text-2xl sm:text-[26px] tabular-nums text-slate-900">
-            {stats.totalAreas || 3}
+            {stats.totalAreas}
           </b>
           <span className="text-xs font-medium text-slate-500">Ruangan</span>
         </div>
@@ -27,14 +27,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
       <div className="p-3.5 sm:px-4 sm:py-3.5">
         <small className="block text-xs font-semibold text-slate-500 mb-1 flex items-center justify-between">
           <span>Gateway IoT</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-600" />
+          <span className={`w-2 h-2 rounded-full ${stats.onlineDevices > 0 ? 'bg-emerald-600' : 'bg-slate-300'}`} />
         </small>
         <div className="flex items-baseline gap-1.5">
           <b className="font-heading font-extrabold text-2xl sm:text-[26px] tabular-nums text-slate-900">
-            {stats.onlineDevices || 2}
+            {stats.onlineDevices}
           </b>
-          <span className="text-xs font-medium text-emerald-600 font-bold">
-            / {stats.totalDevices || 2} Online
+          <span className="text-xs font-medium text-slate-500 font-semibold">
+            / {stats.totalDevices} Online
           </span>
         </div>
       </div>
@@ -49,7 +49,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ stats, onAlarmClick }) => {
             {stats.runningPumps}
           </b>
           <span className="text-xs font-medium text-slate-500">
-            dari {stats.totalPumps || 6} Pompa
+            dari {stats.totalPumps} Pompa
           </span>
         </div>
       </div>

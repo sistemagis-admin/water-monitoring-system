@@ -68,13 +68,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="w-full max-w-[960px] max-h-[96vh] sm:max-h-[90vh] bg-white rounded-[32px] sm:rounded-[38px] shadow-xl sm:shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 border border-slate-200">
         
         {/* ======================================================== */}
-        {/* LEFT COLUMN: Deep Blue Atmospheric Panel */}
+        {/* LEFT COLUMN: Deep Teal Atmospheric Panel (#00799e) */}
         {/* ======================================================== */}
-        <div className="lg:col-span-6 bg-gradient-to-b from-[#1e40af] via-[#2563eb] to-[#3b82f6] p-7 sm:p-10 lg:p-11 flex flex-col justify-between text-white relative overflow-hidden">
+        <div className="lg:col-span-6 bg-gradient-to-b from-[#004e66] via-[#006887] to-[#00799e] p-7 sm:p-10 lg:p-11 flex flex-col justify-between text-white relative overflow-hidden">
           
           {/* Subtle Glow Lighting Effect */}
-          <div className="absolute -top-24 -left-24 w-80 h-80 bg-sky-300/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-blue-900/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-80 h-80 bg-[#00a8d6]/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-[#002f3d]/50 rounded-full blur-3xl pointer-events-none" />
 
           {/* Top: Logo & Brand */}
           <div className="relative z-10 flex items-center gap-2.5">
@@ -91,13 +91,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.2] mb-3.5">
               Sistem Monitoring &amp; Kendali Pompa Air
             </h1>
-            <p className="text-xs sm:text-sm text-blue-100/90 font-medium leading-relaxed max-w-md">
+            <p className="text-xs sm:text-sm text-[#e0f3f8]/90 font-medium leading-relaxed max-w-md">
               Platform telemetri terintegrasi untuk pemantauan level tangki, debit aliran pipa, tekanan distribusi, dan status operasional pompa secara real-time.
             </p>
           </div>
 
           {/* Footer note inside left panel */}
-          <div className="relative z-10 text-[11px] text-blue-100/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
+          <div className="relative z-10 text-[11px] text-[#e0f3f8]/80 font-medium pt-2 border-t border-white/15 flex items-center justify-between">
             <span>PT Ascon Multi Pratama</span>
             <span className="opacity-80">Water Monitoring System</span>
           </div>
@@ -133,7 +133,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
                   Email
                 </label>
-                <div className="flex items-center px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <div className="flex items-center px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#00799e] focus-within:ring-2 focus-within:ring-[#00799e]/20 transition-all">
                   <Mail className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
                   <input
                     type="email"
@@ -151,7 +151,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <label className="block text-[11px] font-bold text-slate-700 mb-1.5">
                   Kata Sandi
                 </label>
-                <div className="flex items-center justify-between px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#2563eb] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                <div className="flex items-center justify-between px-3.5 py-2.5 sm:py-3 rounded-xl bg-slate-100/90 border border-slate-200/70 focus-within:bg-white focus-within:border-[#00799e] focus-within:ring-2 focus-within:ring-[#00799e]/20 transition-all">
                   <div className="flex items-center flex-1 mr-2">
                     <Lock className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
                     <input
@@ -173,11 +173,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </div>
               </div>
 
-              {/* Primary Blue Button (Masuk ke Sistem) */}
+              {/* Primary Teal Button (#00799e) */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-[#2563eb] hover:bg-[#1d4ed8] active:bg-[#1e40af] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md active:scale-98 flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-[#00799e] hover:bg-[#006887] active:bg-[#005872] text-white font-extrabold text-xs sm:text-sm transition-all cursor-pointer shadow-md shadow-[#00799e]/25 active:scale-98 flex items-center justify-center gap-2 mt-4 disabled:opacity-50"
               >
                 {isLoading ? (
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -195,11 +195,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="text-center mt-6 pt-2">
             <p className="text-[10px] text-slate-400 leading-normal max-w-sm mx-auto">
               Dengan masuk ke sistem, Anda menyetujui{' '}
-              <a href="#privacy" className="text-[#2563eb] hover:underline font-semibold">
+              <a href="#privacy" className="text-[#00799e] hover:underline font-semibold">
                 Kebijakan Privasi
               </a>{' '}
               dan{' '}
-              <a href="#terms" className="text-[#2563eb] hover:underline font-semibold">
+              <a href="#terms" className="text-[#00799e] hover:underline font-semibold">
                 Ketentuan Layanan
               </a>{' '}
               PT Ascon Multi Pratama.

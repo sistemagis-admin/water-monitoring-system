@@ -155,6 +155,28 @@ export const api = {
       }
       return res
     },
+    register: async (userData: {
+      email: string
+      full_name: string
+      password: string
+      role?: string
+      site_id?: string
+    }) =>
+      request<{ user: ApiUser }>('/api/v1/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      }),
+    signup: async (userData: {
+      email: string
+      full_name: string
+      password: string
+      role?: string
+      site_id?: string
+    }) =>
+      request<{ user: ApiUser }>('/api/v1/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      }),
     me: async () => {
       const res = await request<ApiUser>('/api/v1/auth/me')
       if (res.success && res.data) {
@@ -167,6 +189,33 @@ export const api = {
       removeStoredToken()
       return res
     },
+  },
+
+  // 2b. User Management Endpoints
+  users: {
+    list: (params?: { role?: string; search?: string; page?: number; page_size?: number }) => {
+      const q = new URLSearchParams()
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') q.append(k, String(v))
+        })
+      }
+      return request<any[]>(`/api/v1/users?${q.toString()}`)
+    },
+    get: (id: string) => request<any>(`/api/v1/users/${id}`),
+    create: (data: {
+      email: string
+      full_name: string
+      password: string
+      role: string
+      site_id?: string
+      phone?: string
+    }) => request<any>('/api/v1/users', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/v1/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => request<any>(`/api/v1/users/${id}`, { method: 'DELETE' }),
+    getRoles: () =>
+      request<Array<{ role: string; label: string; permissions: string[] }>>('/api/v1/users/roles'),
   },
 
   // 3. Dashboard KPI Summary
@@ -412,9 +461,34 @@ export const api = {
 
   // 11. Alarm Rules
   alarmRules: {
-    list: (siteId?: string) =>
-      request<any[]>(`/api/v1/alarm-rules${siteId ? `?site_id=${siteId}` : ''}`),
+    list: (params?: { site_id?: string; asset_id?: string; metric_code?: string; is_enabled?: boolean }) => {
+      const q = new URLSearchParams()
+      if (params) {
+        Object.entries(params).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') q.append(k, String(v))
+        })
+      }
+      return request<any[]>(`/api/v1/alarm-rules?${q.toString()}`)
+    },
     get: (id: string) => request<any>(`/api/v1/alarm-rules/${id}`),
+    create: (data: {
+      site_id?: string
+      asset_id?: string
+      area_id?: string
+      code: string
+      name: string
+      metric_code: string
+      condition: string
+      threshold: number
+      severity: string
+      debounce_seconds?: number
+      is_enabled?: boolean
+    }) => request<any>('/api/v1/alarm-rules', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: any) =>
+      request<any>(`/api/v1/alarm-rules/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (id: string) => request<any>(`/api/v1/alarm-rules/${id}`, { method: 'DELETE' }),
+    enable: (id: string) => request<any>(`/api/v1/alarm-rules/${id}/enable`, { method: 'POST' }),
+    disable: (id: string) => request<any>(`/api/v1/alarm-rules/${id}/disable`, { method: 'POST' }),
   },
 
   // 12. Audit Logs & System Events

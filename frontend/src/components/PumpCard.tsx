@@ -1,159 +1,206 @@
 import React from 'react'
 import type { LocationStation } from '../types/pump'
-import { PumpSceneSvg } from './PumpSceneSvg'
-import { ArcGauge } from './ArcGauge'
-import { Layers, Gauge, Flame, Activity } from 'lucide-react'
+import {
+  Layers,
+  Gauge,
+  Flame,
+  Activity,
+  Zap,
+  Droplets,
+  Thermometer,
+  Power,
+  Plus,
+  Radio,
+  CheckCircle2,
+  AlertCircle,
+} from 'lucide-react'
 
 interface PumpCardProps {
   station: LocationStation
   stationIndex: number
-  onToggleMotor: (stationIndex: number, motorIndex: 0 | 1) => void
+  onToggleMotor: (pumpId: string) => void
+  onOpenAddPump?: (areaId: string) => void
 }
 
 const getRoomIcon = (id: string, name: string) => {
-  if (id.includes('01') || name.toLowerCase().includes('basement')) {
+  if (id.includes('01') || name.toLowerCase().includes('intake') || name.toLowerCase().includes('raw')) {
     return <Layers className="w-4 h-4 text-white" />
   }
-  if (id.includes('02') || name.toLowerCase().includes('booster')) {
+  if (id.includes('02') || name.toLowerCase().includes('treatment') || name.toLowerCase().includes('filter')) {
     return <Gauge className="w-4 h-4 text-white" />
   }
-  if (id.includes('03') || name.toLowerCase().includes('heater')) {
+  if (id.includes('03') || name.toLowerCase().includes('distribution') || name.toLowerCase().includes('booster')) {
     return <Flame className="w-4 h-4 text-white" />
   }
   return <Activity className="w-4 h-4 text-white" />
-}
-
-const getRoomBg = (id: string, name: string) => {
-  if (id.includes('01') || name.toLowerCase().includes('basement')) {
-    return 'bg-[var(--amp-teal)]'
-  }
-  if (id.includes('02') || name.toLowerCase().includes('booster')) {
-    return 'bg-[var(--amp-purple)]'
-  }
-  if (id.includes('03') || name.toLowerCase().includes('heater')) {
-    return 'bg-[var(--amp-magenta)]'
-  }
-  return 'bg-slate-700'
 }
 
 export const PumpCard: React.FC<PumpCardProps> = ({
   station,
   stationIndex,
   onToggleMotor,
+  onOpenAddPump,
 }) => {
-  const activeMotorCount = station.motors[0] + station.motors[1]
-  const isLive = station.flowRate > 1
-  const flowPercent = Math.min(100, Math.max(0, (station.flowRate / 120) * 100))
+  const activePumps = station.pumps.filter((p) => p.status === 'RUNNING')
+  const isRunning = activePumps.length > 0
+  const hasPumps = station.pumps.length > 0
 
   return (
     <article
-      className={`bg-[var(--card)] border rounded-[22px] p-[18px] overflow-hidden transition-all shadow-xs hover:shadow-sm flex flex-col justify-between ${
-        isLive ? 'border-[color-mix(in_srgb,var(--water)_45%,var(--line))] shadow-sm' : 'border-[var(--line)]'
+      className={`bg-white border rounded-[22px] p-5 transition-all shadow-xs hover:shadow-sm flex flex-col justify-between ${
+        isRunning
+          ? 'border-emerald-400 ring-2 ring-emerald-400/10'
+          : 'border-slate-200'
       }`}
     >
       <div>
-        {/* Card Header Top with Solid Icon Badge */}
-        <div className="flex justify-between items-center mb-2">
+        {/* Card Header: Icon, Room Name, and Operational Status Pill */}
+        <div className="flex justify-between items-start gap-2 mb-4 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div
-              className={`w-9 h-9 rounded-xl ${getRoomBg(
-                station.id,
-                station.name
-              )} text-white flex items-center justify-center shrink-0 shadow-xs`}
-            >
-              {getRoomIcon(station.id, station.name)}
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 shadow-2xs font-extrabold text-xs">
+              {station.number || `0${stationIndex + 1}`}
             </div>
             <div>
-              <h2 className="font-heading font-extrabold text-[19px] sm:text-[21px] text-[var(--ink)] m-0 leading-tight">
+              <h3 className="font-heading font-extrabold text-base text-slate-900 m-0 leading-tight">
                 {station.name}
-              </h2>
-              <span className="text-xs text-[var(--mut)]">
-                {station.code} · Lokasi {station.number}
+              </h3>
+              <span className="text-[11px] text-slate-500 font-mono">
+                {station.code} · Stasiun {station.number}
               </span>
             </div>
           </div>
 
           <span
-            className={`text-xs font-extrabold px-3 py-1 rounded-full text-white shadow-xs transition-colors duration-200 tracking-tight ${
-              activeMotorCount > 0
-                ? 'bg-emerald-600'
-                : 'bg-slate-400'
+            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 shadow-2xs ${
+              !hasPumps
+                ? 'bg-slate-100 text-slate-500'
+                : isRunning
+                ? 'bg-emerald-600 text-white'
+                : 'bg-slate-100 text-slate-600'
             }`}
           >
-            {activeMotorCount > 0 ? `${activeMotorCount} motor jalan` : 'Mati'}
+            {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+            {!hasPumps ? 'Kosong' : isRunning ? `${activePumps.length} Aktif` : 'Standby'}
           </span>
         </div>
 
-        {/* Interactive SVG Pump Scene */}
-        <PumpSceneSvg
-          stationName={station.name}
-          motors={station.motors}
-          flowRate={station.flowRate}
-        />
-
-        {/* Meters (Pressure Arc & Flow Bar) */}
-        <div className="grid grid-cols-2 gap-3 items-center my-2 mb-3.5">
-          {/* Pressure Arc Gauge */}
-          <div>
-            <ArcGauge pressure={station.pressure} />
+        {/* Live Hydraulic Telemetry Bar (Pressure & Flow) */}
+        <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+          {/* Pressure Metric */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <Gauge className="w-3 h-3 text-[#00799e]" />
+              Tekanan
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-heading font-extrabold text-xl text-slate-900 tabular-nums">
+                {station.pressure.toFixed(2)}
+              </span>
+              <span className="text-xs text-slate-500 font-semibold">bar</span>
+            </div>
           </div>
 
-          {/* Flow Meter Bar */}
-          <div className="flex flex-col justify-center">
-            <small className="block text-xs text-[var(--mut)] mb-0.5">Debit</small>
-            <div className="leading-none">
-              <b className="font-heading font-extrabold text-[26px] sm:text-[30px] tabular-nums text-[var(--ink)]">
+          {/* Flow Metric */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+              <Droplets className="w-3 h-3 text-cyan-600" />
+              Debit Aliran
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-heading font-extrabold text-xl text-slate-900 tabular-nums">
                 {station.flowRate.toFixed(1)}
-              </b>
-              <small className="text-[var(--mut)] ml-1 text-xs">L/min</small>
-            </div>
-            {/* Horizontal Bar */}
-            <div className="h-2 rounded-[9px] bg-[var(--cas)] mt-2.5 overflow-hidden">
-              <div
-                className="h-full rounded-[9px] bg-[var(--water)] transition-all duration-700"
-                style={{ width: `${flowPercent}%` }}
-              />
+              </span>
+              <span className="text-xs text-slate-500 font-semibold">m³/h</span>
             </div>
           </div>
         </div>
 
-        {/* Dual Motor Switches */}
-        <div className="grid grid-cols-2 gap-2.5">
-          {[0, 1].map((k) => {
-            const motorIdx = k as 0 | 1
-            const isMotorOn = station.motors[motorIdx] === 1
-
-            return (
+        {/* Pumps List inside this Room */}
+        {!hasPumps ? (
+          <div className="py-6 text-center flex flex-col items-center justify-center bg-slate-50/50 border border-dashed border-slate-200 rounded-xl mb-4">
+            <span className="text-xs font-semibold text-slate-500 mb-2">
+              Belum ada pompa di stasiun ini
+            </span>
+            {onOpenAddPump && (
               <button
-                key={k}
-                role="switch"
-                aria-checked={isMotorOn}
-                onClick={() => onToggleMotor(stationIndex, motorIdx)}
-                className="font-medium text-xs sm:text-sm text-[var(--ink)] bg-[var(--cas)]/60 hover:bg-[var(--cas)] border border-[var(--line)] rounded-[14px] p-2.5 px-3 flex justify-between items-center cursor-pointer transition-all hover:border-[var(--water)]/50 focus-visible:outline-3 focus-visible:outline-[var(--water)] focus-visible:outline-offset-2 select-none"
+                type="button"
+                onClick={() => onOpenAddPump(station.id)}
+                className="px-3 py-1.5 rounded-lg bg-[var(--amp-teal)] text-white text-xs font-bold hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-2xs flex items-center gap-1"
               >
-                <span>Motor {k + 1}</span>
-                {/* Pill Switch */}
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Pasang Pompa</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2.5 mb-4">
+            {station.pumps.map((pump, pIdx) => {
+              const pumpRunning = pump.status === 'RUNNING'
+              const motorIdx = (pIdx % 2) as 0 | 1
+
+              return (
                 <div
-                  className={`w-[38px] h-[22px] rounded-full relative transition-colors duration-250 ${
-                    isMotorOn ? 'bg-[var(--on)]' : 'bg-[var(--line)]'
+                  key={pump.id}
+                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all ${
+                    pumpRunning
+                      ? 'bg-emerald-50/50 border-emerald-200'
+                      : 'bg-white border-slate-200'
                   }`}
                 >
-                  <span
-                    className={`absolute top-[3px] w-4 h-4 rounded-full bg-white transition-all duration-250 ${
-                      isMotorOn ? 'left-[19px]' : 'left-[3px]'
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={`w-2 h-2 rounded-full shrink-0 ${
+                        pumpRunning ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-xs text-slate-900">
+                          {pump.code}
+                        </span>
+                        <span className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                          {pump.name}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                        <span>{pump.metrics.power_kw.toFixed(1)} kW</span>
+                        <span>•</span>
+                        <span>{pump.metrics.motor_temp_c.toFixed(0)}°C</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Switch toggle */}
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={pumpRunning}
+                    onClick={() => onToggleMotor(pump.id)}
+                    className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer inline-flex items-center px-0.5 shrink-0 ${
+                      pumpRunning ? 'bg-emerald-500' : 'bg-slate-300'
                     }`}
-                  />
+                    title={`Klik untuk ${pumpRunning ? 'Matikan' : 'Nyalakan'} ${pump.name}`}
+                  >
+                    <span
+                      className={`w-4 h-4 rounded-full bg-white shadow-xs transition-transform duration-200 transform ${
+                        pumpRunning ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
-              </button>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Card Footer Tag */}
-      <div className="mt-3.5 text-xs text-[var(--mut)] font-mono flex items-center justify-between border-t border-[var(--line)]/50 pt-2.5">
-        <span>{station.sensorTag}</span>
-        <span className="text-[11px] opacity-70">Sistem Hidrolik</span>
+      <div className="pt-3 border-t border-slate-100 text-[11px] text-slate-400 font-mono flex items-center justify-between">
+        <span className="flex items-center gap-1">
+          <Radio className="w-3 h-3 text-slate-400" />
+          {station.sensorTag || 'TELEMETRY-OK'}
+        </span>
+        <span className="font-semibold text-slate-500">SCADA Online</span>
       </div>
     </article>
   )

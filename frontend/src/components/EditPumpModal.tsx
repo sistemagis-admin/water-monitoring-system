@@ -1,31 +1,44 @@
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import type { AreaRoom, DeviceGateway, AddPumpInput, PumpSubtype } from '../types/pump'
+import type { AreaRoom, DeviceGateway, PumpAsset, PumpSubtype } from '../types/pump'
 import { CustomSelect, type SelectOption } from './CustomSelect'
-import { PlusCircle, X, Check, Shield, Layers } from 'lucide-react'
+import { Pencil, X, Check, Shield } from 'lucide-react'
 
-interface AddPumpModalProps {
+interface EditPumpModalProps {
   isOpen: boolean
   onClose: () => void
-  onAddPump: (payload: AddPumpInput) => void
+  pump: PumpAsset | null
   rooms: AreaRoom[]
   gateways: DeviceGateway[]
-  initialAreaId?: string
+  onUpdatePump: (
+    pumpId: string,
+    payload: {
+      code: string
+      name: string
+      subtype?: PumpSubtype
+      areaId?: string
+      deviceId?: string
+      ratedPowerKw?: number
+      ratedFlowM3h?: number
+      ratedPressureBar?: number
+      controlEnabled?: boolean
+    }
+  ) => void
 }
 
-export const AddPumpModal: React.FC<AddPumpModalProps> = ({
+export const EditPumpModal: React.FC<EditPumpModalProps> = ({
   isOpen,
   onClose,
-  onAddPump,
+  pump,
   rooms,
   gateways,
-  initialAreaId,
+  onUpdatePump,
 }) => {
-  const [code, setCode] = useState(`P-0${Math.floor(Math.random() * 90 + 10)}`)
+  const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [subtype, setSubtype] = useState<PumpSubtype>('MAIN_PUMP')
-  const [areaId, setAreaId] = useState(initialAreaId || rooms[0]?.id || 'room-01')
-  const [deviceId, setDeviceId] = useState(gateways[0]?.id || 'gw-001')
+  const [areaId, setAreaId] = useState('')
+  const [deviceId, setDeviceId] = useState('')
   const [ratedPowerKw, setRatedPowerKw] = useState(18.5)
   const [ratedFlowM3h, setRatedFlowM3h] = useState(50.0)
   const [ratedPressureBar, setRatedPressureBar] = useState(4.5)
@@ -33,26 +46,25 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false)
 
   useEffect(() => {
-    if (initialAreaId) {
-      setAreaId(initialAreaId)
-    } else if (rooms[0]?.id) {
-      setAreaId(rooms[0].id)
-    }
-  }, [initialAreaId, rooms, isOpen])
-
-  // Prevent background scrolling when modal is open
-  useEffect(() => {
-    if (isOpen) {
+    if (pump && isOpen) {
       document.body.style.overflow = 'hidden'
+      setCode(pump.code || '')
+      setName(pump.name || '')
+      setAreaId(pump.areaId || rooms[0]?.id || '')
+      setDeviceId(gateways[0]?.id || '')
+      setControlEnabled(pump.controlEnabled ?? true)
+      setRatedPowerKw(pump.metrics?.power_kw ? +pump.metrics.power_kw.toFixed(1) : 18.5)
+      setRatedFlowM3h(pump.metrics?.flow_m3h ? +pump.metrics.flow_m3h.toFixed(1) : 50.0)
+      setRatedPressureBar(pump.metrics?.pressure_bar ? +pump.metrics.pressure_bar.toFixed(1) : 4.5)
     } else {
       document.body.style.overflow = 'unset'
     }
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen])
+  }, [pump, isOpen, rooms, gateways])
 
-  if (!isOpen) return null
+  if (!isOpen || !pump) return null
 
   const subtypeOptions: SelectOption[] = [
     { value: 'MAIN_PUMP', label: 'Main Pump (Intake Utama)' },
@@ -76,15 +88,14 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!name.trim() || !code.trim()) return
 
-    onAddPump({
+    onUpdatePump(pump.id, {
       code: code.trim(),
       name: name.trim(),
       subtype,
       areaId,
       deviceId,
-      motorIndex: 0,
       ratedPowerKw: Number(ratedPowerKw),
       ratedFlowM3h: Number(ratedFlowM3h),
       ratedPressureBar: Number(ratedPressureBar),
@@ -106,14 +117,14 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
         <div className="p-5 pb-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/60 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#00799e] text-white flex items-center justify-center shadow-xs shrink-0">
-              <Layers className="w-5 h-5 text-white" />
+              <Pencil className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="font-heading font-semibold text-base text-slate-900 m-0 leading-tight">
-                Tambah Pompa Baru
+                Edit Data Pompa
               </h3>
               <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
-                Pendaftaran aset unit pompa air ke ruangan
+                Perbarui spesifikasi teknis &amp; lokasi penempatan pompa
               </p>
             </div>
           </div>
@@ -140,7 +151,7 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
                 required
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder="Contoh: P-07"
+                placeholder="Contoh: P-01"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
               />
             </div>
@@ -166,7 +177,7 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Contoh: Pump 07 (Booster Reserve)"
+              placeholder="Contoh: Pump 01 (Intake Utama)"
               className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:border-[#00799e] outline-hidden transition-all"
             />
           </div>
@@ -272,7 +283,7 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
               type="submit"
               className="px-4 py-2 rounded-xl text-xs font-medium text-white bg-[#00799e] hover:bg-[#006887] active:scale-95 transition-all cursor-pointer shadow-xs"
             >
-              Simpan Pompa
+              Simpan Perubahan
             </button>
           </div>
         </form>
