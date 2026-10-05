@@ -61,7 +61,11 @@ export function usePumpSystem() {
         setCurrentUser(meRes.data)
         setIsAuthenticated(true)
       } else {
-        setIsAuthenticated(false)
+        if (!getStoredToken() || meRes?.error?.code === 'AUTH_UNAUTHORIZED' || meRes?.error?.code?.includes('401')) {
+          setIsAuthenticated(false)
+          removeStoredToken()
+          setCurrentUser(null)
+        }
         setIsLoading(false)
         return false
       }
@@ -338,6 +342,25 @@ export function usePumpSystem() {
             setGateways((prev) =>
               prev.map((g) => (g.id === data.id || g.code === data.code ? { ...g, status: data.status } : g))
             )
+          } else if (event === 'command.updated') {
+            if (data?.status === 'EXECUTED' && data?.actual_state) {
+              const targetStatus = (data.actual_state === 'ON' ? 'RUNNING' : 'STOPPED') as PumpStatus
+              setRooms((prevRooms) =>
+                prevRooms.map((room) => ({
+                  ...room,
+                  pumps: room.pumps.map((pump) => {
+                    if (pump.id === data.asset_id || pump.code === data.asset_code) {
+                      return {
+                        ...pump,
+                        status: targetStatus,
+                        commandState: 'EXECUTED' as const,
+                      }
+                    }
+                    return pump
+                  }) as [PumpAsset, PumpAsset],
+                }))
+              )
+            }
           }
         },
         onError: () => {
@@ -492,9 +515,10 @@ export function usePumpSystem() {
 
   // Toggle pump motor power (Issues remote command to Fastify backend)
   const togglePumpPower = useCallback(
-    async (pumpIdOrRoomIdx: string | number, secondaryMotorIdx?: number) => {
+    async (pumpIdOrRoomIdx: string | number, secondaryMotorIdx?: number): Promise<{ success: boolean; error?: string }> => {
       let targetPumpId: string | undefined
       let willBeRunning = false
+      let previousStatus: PumpStatus = 'STOPPED'
 
       setRooms((prevRooms) => {
         let targetPump: PumpAsset | undefined
@@ -519,6 +543,7 @@ export function usePumpSystem() {
         if (!targetPump || !targetRoom) return prevRooms
 
         targetPumpId = targetPump.id
+        previousStatus = targetPump.status
         willBeRunning = targetPump.status !== 'RUNNING'
 
         return prevRooms.map((room) => {
@@ -550,15 +575,50 @@ export function usePumpSystem() {
       if (isBackendOnline && targetPumpId) {
         const desiredState = willBeRunning ? 'ON' : 'OFF'
         try {
-          await api.assets.issuePowerCommand(targetPumpId, {
+          const res = await api.assets.issuePowerCommand(targetPumpId, {
             desired_state: desiredState,
             confirmation: true,
             note: `Operator UI command ${desiredState}`,
           })
-        } catch (err) {
-          console.warn('API command error:', err)
+
+          if (!res.success) {
+            const errMsg = res.error?.message || 'Gagal mengirim perintah kontrol ke SCADA backend.'
+            // Rollback optimistic update
+            setRooms((prevRooms) =>
+              prevRooms.map((room) => ({
+                ...room,
+                pumps: room.pumps.map((p) => {
+                  if (p.id !== targetPumpId) return p
+                  return {
+                    ...p,
+                    status: previousStatus,
+                    commandState: 'REJECTED' as const,
+                  }
+                }),
+              }))
+            )
+            return { success: false, error: errMsg }
+          }
+        } catch (err: any) {
+          const errMsg = err?.message || 'Koneksi ke SCADA backend terputus.'
+          setRooms((prevRooms) =>
+            prevRooms.map((room) => ({
+              ...room,
+              pumps: room.pumps.map((p) => {
+                if (p.id !== targetPumpId) return p
+                return {
+                  ...p,
+                  status: previousStatus,
+                  commandState: 'REJECTED' as const,
+                }
+              }),
+            }))
+          )
+          return { success: false, error: errMsg }
         }
       }
+
+      return { success: true }
     },
     [isBackendOnline]
   )

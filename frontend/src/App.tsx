@@ -228,7 +228,12 @@ export function App() {
 
     const willBeRunning = targetPump?.status !== 'RUNNING'
 
-    await toggleMotor(pumpIdOrRoomIdx, motorIndex)
+    const res = await toggleMotor(pumpIdOrRoomIdx, motorIndex)
+    if (res && res.success === false) {
+      toast.error('Gagal Mengubah Status Pompa', res.error || 'Perintah ditolak oleh SCADA backend atau gateway.')
+      return
+    }
+
     if (willBeRunning) {
       toast.success('Pump Motor Started', `Unit ${targetPump?.code || targetPump?.name || 'Pump'} is now running.`)
     } else {

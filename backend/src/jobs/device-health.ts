@@ -4,6 +4,14 @@ import { env } from '../config/env.js';
 import { logger } from '../shared/utils/logger.js';
 
 export async function checkDeviceHealth() {
+  if (env.NODE_ENV === 'development') {
+    // In local development / demo environment without physical edge hardware,
+    // maintain virtual gateway devices as ONLINE so operator commands succeed
+    await query(`UPDATE mqtt_devices SET status = 'ONLINE', last_seen_at = CURRENT_TIMESTAMP WHERE status != 'ONLINE'`);
+    await query(`UPDATE device_current_state SET status = 'ONLINE', updated_at = CURRENT_TIMESTAMP WHERE status != 'ONLINE'`);
+    return;
+  }
+
   const timeoutMs = env.DEVICE_OFFLINE_TIMEOUT;
   const thresholdDate = new Date(Date.now() - timeoutMs);
 

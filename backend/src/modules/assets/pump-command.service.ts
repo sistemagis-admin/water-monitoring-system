@@ -59,7 +59,20 @@ export class PumpCommandService {
     }
 
     if (asset.device_status !== 'ONLINE') {
-      throw AppError.badRequest('Cannot send command: Gateway device is currently OFFLINE', 'DEVICE_OFFLINE');
+      if (env.NODE_ENV === 'development') {
+        // In local development mode, auto-online the device so local SCADA commands succeed
+        await query(
+          `UPDATE mqtt_devices SET status = 'ONLINE', last_seen_at = CURRENT_TIMESTAMP WHERE id = $1`,
+          [asset.device_id]
+        );
+        await query(
+          `UPDATE device_current_state SET status = 'ONLINE', updated_at = CURRENT_TIMESTAMP WHERE device_id = $1`,
+          [asset.device_id]
+        );
+        asset.device_status = 'ONLINE';
+      } else {
+        throw AppError.badRequest('Cannot send command: Gateway device is currently OFFLINE', 'DEVICE_OFFLINE');
+      }
     }
 
     // 2. Check Idempotency / Active Command
@@ -165,6 +178,36 @@ export class PumpCommandService {
     // 7. Emit SSE
     sseManager.broadcast('command.updated', command, asset.site_id);
 
+    // Auto-ack fallback in development mode if no external PLC simulator acknowledges within 600ms
+    if (env.NODE_ENV === 'development') {
+      setTimeout(async () => {
+        try {
+          const checkCmd = await query(
+            `SELECT status FROM pump_commands WHERE command_id = $1`,
+            [commandId]
+          );
+          if (checkCmd.rows.length > 0 && ['PENDING', 'SENT'].includes(checkCmd.rows[0].status)) {
+            await this.handleAck(asset.site_code || 'SITE-DEMO', asset.device_code || 'gw-001', {
+              version: 1,
+              command_id: commandId,
+              timestamp: new Date().toISOString(),
+              asset_id: asset.code,
+              status: 'EXECUTED',
+              desired_state: input.desiredState,
+              actual_state: input.desiredState,
+              message: `Simulated PLC interlock verified: ${asset.code} switched ${input.desiredState}`,
+            });
+          }
+        } catch (err: any) {
+          logger.warn({
+            service: 'pump_command',
+            event: 'dev_auto_ack_error',
+            message: err.message,
+          });
+        }
+      }, 600);
+    }
+
     return command;
   }
 
@@ -214,6 +257,13 @@ export class PumpCommandService {
         status,
         cmd.asset_id,
       ]);
+
+      // Broadcast asset status update via SSE
+      sseManager.broadcast(
+        'asset.status',
+        { asset_id: cmd.asset_id, asset_code: cmd.asset_code, status },
+        cmd.site_id
+      );
     }
 
     // Broadcast SSE

@@ -14,7 +14,11 @@ export function getApiBaseUrl(): string {
   if (envUrl && envUrl.trim()) {
     return envUrl.trim().replace(/\/+$/, '')
   }
-  return 'http://192.168.100.6:3000'
+  if (typeof window !== 'undefined' && window.location.hostname) {
+    const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:'
+    return `${protocol}//${window.location.hostname}:3000`
+  }
+  return 'http://localhost:3000'
 }
 
 export const API_BASE_URL = getApiBaseUrl()
@@ -94,36 +98,47 @@ async function request<T = any>(
   const baseUrl = getApiBaseUrl()
   const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  })
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    })
 
-  if (response.status === 401) {
-    // Stale token
-    removeStoredToken()
-  }
+    if (response.status === 401) {
+      // Stale or invalid token
+      removeStoredToken()
+    }
 
-  const json = await response.json().catch(() => ({
-    success: false,
-    error: { code: 'NETWORK_ERROR', message: `HTTP ${response.status} ${response.statusText}` },
-  }))
+    const json = await response.json().catch(() => ({
+      success: false,
+      error: { code: 'NETWORK_ERROR', message: `HTTP ${response.status} ${response.statusText}` },
+    }))
 
-  if (!response.ok) {
+    if (!response.ok) {
+      return {
+        success: false,
+        data: null as any,
+        error: json.error || { code: `HTTP_${response.status}`, message: json.message || 'Request failed' },
+      }
+    }
+
+    if (json && typeof json === 'object' && 'data' in json && 'success' in json) {
+      return json as ApiResponse<T>
+    }
+
+    return {
+      success: true,
+      data: json as T,
+    }
+  } catch (err: any) {
     return {
       success: false,
       data: null as any,
-      error: json.error || { code: `HTTP_${response.status}`, message: json.message || 'Request failed' },
+      error: {
+        code: 'CONNECTION_ERROR',
+        message: err?.message || 'Tidak dapat terhubung ke server SCADA backend.',
+      },
     }
-  }
-
-  if (json && typeof json === 'object' && 'data' in json && 'success' in json) {
-    return json as ApiResponse<T>
-  }
-
-  return {
-    success: true,
-    data: json as T,
   }
 }
 
