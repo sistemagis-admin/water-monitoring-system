@@ -5,6 +5,7 @@ import { startDeviceHealthJob } from './jobs/device-health.js';
 import { startCommandTimeoutJob } from './jobs/command-timeout.js';
 import { sseManager } from './infrastructure/realtime/sse-manager.js';
 import { pool } from './infrastructure/db/index.js';
+import { mqttSimulatorService } from './simulator/simulator.service.js';
 
 async function startServer() {
   try {
@@ -12,6 +13,11 @@ async function startServer() {
 
     // Initialize MQTT Ingestion Client
     mqttManager.init();
+
+    // Start Virtual SCADA / IoT Edge Telemetry Simulator (auto-enabled in dev)
+    if (process.env.ENABLE_SIMULATOR !== 'false') {
+      await mqttSimulatorService.start();
+    }
 
     // Start Background Jobs
     const stopDeviceHealthJob = startDeviceHealthJob(10000);
@@ -40,6 +46,7 @@ async function startServer() {
     for (const signal of signals) {
       process.on(signal, async () => {
         console.log(`Received ${signal}, shutting down gracefully...`);
+        mqttSimulatorService.stop();
         stopDeviceHealthJob();
         stopCommandTimeoutJob();
         sseManager.close();

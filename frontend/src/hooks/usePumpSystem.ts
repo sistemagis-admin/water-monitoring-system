@@ -285,6 +285,10 @@ export function usePumpSystem() {
                   ...room,
                   pressure: avgP > 0 ? avgP : room.pressure,
                   flowRate: sumF > 0 ? sumF : room.flowRate,
+                  tankLevel:
+                    data.metrics?.tank_level_pct !== undefined && room.tankLevel !== undefined
+                      ? Number(data.metrics.tank_level_pct)
+                      : room.tankLevel,
                   pumps: updatedPumps,
                   history: {
                     pressure: avgP > 0 ? [...room.history.pressure.slice(1), avgP] : room.history.pressure,
