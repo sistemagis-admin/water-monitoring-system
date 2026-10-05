@@ -16,8 +16,8 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
-  const [email, setEmail] = useState('admin@ascon.co.id')
-  const [password, setPassword] = useState('Admin@123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -32,19 +32,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     }
   }, [])
 
-  const handleQuickFill = (presetEmail: string, presetPass: string) => {
-    setEmail(presetEmail)
-    setPassword(presetPass)
-    setErrorMessage(null)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const inputEmail = email.trim()
     const inputPass = password.trim()
 
     if (!inputEmail || !inputPass) {
-      setErrorMessage('Please enter both your email address and password.')
+      setErrorMessage('Mohon masukkan alamat email dan kata sandi Anda.')
       return
     }
 
@@ -54,16 +48,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     try {
       const result = await onLogin({ email: inputEmail, password: inputPass })
       if (!result.success) {
-        let errText = result.error || 'Invalid credentials. Please verify your email and password.'
-        if (errText.includes('AUTH_INVALID_CREDENTIAL') || errText.includes('Invalid email or password')) {
-          errText = 'Invalid email or password. Please verify credentials (e.g. admin@ascon.co.id / Admin@123).'
-        } else if (errText.includes('Invalid email address') || errText.includes('invalid_string')) {
-          errText = 'Invalid email format. Please check the email format (e.g. admin@ascon.co.id).'
-        }
-        setErrorMessage(errText)
+        // OWASP Security Guideline: Generic error message to prevent user enumeration & credential disclosure
+        setErrorMessage('Email atau kata sandi yang Anda masukkan salah. Silakan coba kembali.')
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Unable to connect to Fastify SCADA backend.')
+      setErrorMessage(err.message || 'Tidak dapat terhubung ke server SCADA. Periksa koneksi jaringan Anda.')
     } finally {
       setIsLoading(false)
     }
@@ -116,44 +105,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         <div className="lg:col-span-6 bg-white p-7 sm:p-9 lg:p-11 flex flex-col justify-between overflow-y-auto">
           <div className="max-w-md mx-auto w-full my-auto">
             {/* Header Title */}
-            <div className="text-center mb-5">
+            <div className="text-center mb-6">
               <h2 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight">
                 Sign In to SCADA
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 Enter your credentials to access system telemetry
               </p>
-            </div>
-
-            {/* Quick Demo Access Pills */}
-            <div className="mb-4 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Akses Cepat (Demo Presets)</span>
-                <span className="text-[#00799e] font-semibold">Klik untuk isi</span>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('admin@ascon.co.id', 'Admin@123')}
-                  className="px-2 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-[#00799e] hover:text-[#00799e] text-[11px] font-bold text-slate-700 transition-all text-center shadow-2xs cursor-pointer active:scale-95"
-                >
-                  Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('operator@ascon.co.id', 'Operator@123')}
-                  className="px-2 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-[#00799e] hover:text-[#00799e] text-[11px] font-bold text-slate-700 transition-all text-center shadow-2xs cursor-pointer active:scale-95"
-                >
-                  Operator
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('engineer@ascon.co.id', 'Engineer@123')}
-                  className="px-2 py-1.5 rounded-lg bg-white border border-slate-200 hover:border-[#00799e] hover:text-[#00799e] text-[11px] font-bold text-slate-700 transition-all text-center shadow-2xs cursor-pointer active:scale-95"
-                >
-                  Engineer
-                </button>
-              </div>
             </div>
 
             {/* Error Notification Alert */}
@@ -178,7 +136,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@ascon.co.id"
+                    placeholder="user@ascon.co.id"
+                    autoComplete="email"
                     className="w-full bg-transparent text-xs sm:text-[13px] font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                   />
                 </div>
@@ -198,6 +157,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••••••"
+                      autoComplete="current-password"
                       className="w-full bg-transparent text-xs sm:text-[13px] font-mono font-semibold text-slate-900 outline-hidden placeholder-slate-400"
                     />
                   </div>
@@ -205,6 +165,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
                     className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer ml-1 shrink-0"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
