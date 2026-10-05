@@ -50,10 +50,10 @@ export async function seedDatabase() {
     const orgId = orgRes.rows[0].id;
 
     // 4. Seed Project
-    console.log('4. Seeding SCADA Project...');
+    console.log('4. Seeding SWPMS Project...');
     const projRes = await client.query(
       `INSERT INTO projects (organization_id, code, name, description, status)
-       VALUES ($1, 'SWPMS-PROD', 'Sistem SCADA Pemantauan & Otomasi Pompa Air', 'Industrial SCADA Telemetry & Pump Automation System', 'ACTIVE')
+       VALUES ($1, 'SWPMS-PROD', 'Sistem Pemantauan & Otomasi Pompa Air', 'Industrial Telemetry & Pump Automation System', 'ACTIVE')
        ON CONFLICT (organization_id, code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description
        RETURNING id`,
       [orgId]
@@ -76,7 +76,7 @@ export async function seedDatabase() {
     const salt = await bcrypt.genSalt(10);
     const usersData = [
       { email: 'admin@ascon.co.id', pass: 'Admin@123', name: 'Super Admin Ascon', role: ROLES.SUPER_ADMIN },
-      { email: 'engineer@ascon.co.id', pass: 'Engineer@123', name: 'Field SCADA Engineer', role: ROLES.ENGINEER },
+      { email: 'engineer@ascon.co.id', pass: 'Engineer@123', name: 'Field Automation Engineer', role: ROLES.ENGINEER },
       { email: 'operator@ascon.co.id', pass: 'Operator@123', name: 'Plant Operator', role: ROLES.OPERATOR },
       { email: 'viewer@ascon.co.id', pass: 'Viewer@123', name: 'Auditor & Client Viewer', role: ROLES.VIEWER },
     ];
@@ -140,10 +140,10 @@ export async function seedDatabase() {
     );
 
     // 8. Seed IoT Edge Gateways (Panel 1 & Panel 2)
-    console.log('8. Seeding SCADA Edge Gateways...');
+    console.log('8. Seeding IoT Edge Gateways...');
     const devicesData = [
-      { code: 'gw-001', name: 'Main SCADA Edge Gateway Panel 1 (Intake & Transfer)', area: 'ST-INTAKE' },
-      { code: 'gw-002', name: 'Auxiliary SCADA Edge Gateway Panel 2 (Booster & Tank)', area: 'ST-BOOSTER' },
+      { code: 'gw-001', name: 'Main Edge Gateway Panel 1 (Intake & Transfer)', area: 'ST-INTAKE' },
+      { code: 'gw-002', name: 'Auxiliary Edge Gateway Panel 2 (Booster & Tank)', area: 'ST-BOOSTER' },
     ];
     const deviceMap = new Map<string, string>();
     for (const dev of devicesData) {

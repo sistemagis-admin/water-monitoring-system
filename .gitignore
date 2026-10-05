@@ -17,10 +17,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Environment files
+# Environment files (Never commit secrets!)
 .env
-.env.local
-.env.*.local
+.env.*
+*.env
+backend/.env
+frontend/.env
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Editor & OS
 .vscode/*

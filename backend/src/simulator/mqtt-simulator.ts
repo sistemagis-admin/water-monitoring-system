@@ -1,7 +1,7 @@
 import { mqttSimulatorService } from './simulator.service.js';
 
 console.log('========================================================================');
-console.log('⚡ SWPMS Industrial IoT Edge & SCADA Telemetry Simulator CLI');
+console.log('⚡ SWPMS Industrial IoT Edge & Telemetry Simulator CLI');
 console.log('🏢 PT Ascon Multi Pratama - Virtual PLC & Sensor Network');
 console.log('========================================================================');
 

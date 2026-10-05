@@ -27,7 +27,7 @@ You can import this entire API into Postman directly by choosing **Import -> Lin
         `,
         version: '1.1.0',
         contact: {
-          name: 'PT Ascon Multi Pratama SCADA & Automation Team',
+          name: 'PT Ascon Multi Pratama Automation Team',
           url: 'https://ascon.co.id',
         },
       },

@@ -5,7 +5,7 @@
     "description": "\n### PT Ascon Multi Pratama - Industrial IoT & Water Pump Monitoring Dashboard\n\nSWPMS is a centralized, real-time, and historical water pump monitoring backend platform.\nThis API provides full operational telemetry queries, dynamic site/area/device/sensor topology management, alarm rule evaluation, audit logging, CSV reporting, and controlled commanded pump ON/OFF power operations.\n\n#### Authentication\nUse the `/api/v1/auth/login` endpoint to obtain a JWT Bearer token.\nProvide the token in the header:\n`Authorization: Bearer <your_jwt_token>`\n\n#### Postman Import Instructions\nYou can import this entire API into Postman directly by choosing **Import -> Link** and pasting:\n`http://localhost:3000/docs/json` or downloading the OpenAPI specification from `/docs/json`.\n        ",
     "version": "1.1.0",
     "contact": {
-      "name": "PT Ascon Multi Pratama SCADA & Automation Team",
+      "name": "PT Ascon Multi Pratama Automation Team",
       "url": "https://ascon.co.id"
     }
   },

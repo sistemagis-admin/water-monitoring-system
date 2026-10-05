@@ -14,7 +14,7 @@ async function startServer() {
     // Initialize MQTT Ingestion Client
     mqttManager.init();
 
-    // Start Virtual SCADA / IoT Edge Telemetry Simulator (auto-enabled in dev)
+    // Start Virtual IoT Edge Telemetry Simulator (auto-enabled in dev)
     if (process.env.ENABLE_SIMULATOR !== 'false') {
       await mqttSimulatorService.start();
     }
@@ -29,7 +29,7 @@ async function startServer() {
     console.log(`
 ========================================================================
 🚀 Smart Water Pump Monitoring System (SWPMS) - Fastify Backend API
-🏢 PT Ascon Multi Pratama - SCADA & Industrial IoT
+🏢 PT Ascon Multi Pratama - Industrial IoT & Telemetry Platform
 ========================================================================
 📡 API Server running on    : http://${env.HOST}:${env.PORT}
 📖 Swagger UI Documentation : http://localhost:${env.PORT}/docs

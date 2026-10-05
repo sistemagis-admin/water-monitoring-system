@@ -60,7 +60,7 @@ export class PumpCommandService {
 
     if (asset.device_status !== 'ONLINE') {
       if (env.NODE_ENV === 'development') {
-        // In local development mode, auto-online the device so local SCADA commands succeed
+        // In local development mode, auto-online the device so local pump commands succeed
         await query(
           `UPDATE mqtt_devices SET status = 'ONLINE', last_seen_at = CURRENT_TIMESTAMP WHERE id = $1`,
           [asset.device_id]
