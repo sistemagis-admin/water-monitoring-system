@@ -374,6 +374,7 @@ export function App() {
           {activeTab === 'devices' && (
             <DeviceHealthTable
               gateways={gateways}
+              rooms={rooms}
               onOpenAddDevice={() => setIsAddDeviceOpen(true)}
               onDeleteDevice={handleDeleteGateway}
             />

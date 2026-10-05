@@ -75,6 +75,8 @@ export interface DeviceGateway {
   code: string
   name: string
   siteId: string
+  siteName?: string
+  connectedPumps?: string[]
   status: 'ONLINE' | 'STALE' | 'OFFLINE'
   lastSeen: string
   firmware: string
