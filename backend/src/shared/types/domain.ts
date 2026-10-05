@@ -50,8 +50,9 @@ export interface MetricValue {
 
 export interface AuthUserPayload {
   id: string;
-  email: string;
-  role: string;
-  permissions: string[];
+  email?: string;
+  role?: string;
+  permissions?: string[];
   site_id?: string | null;
+  type?: 'access' | 'refresh';
 }

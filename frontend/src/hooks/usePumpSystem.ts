@@ -240,12 +240,9 @@ export function usePumpSystem() {
         setAlarms(parsedAlarms)
       }
 
-      // Connect to Realtime Server-Sent Events (SSE) stream
-      if (sseUnsubscribeRef.current) {
-        sseUnsubscribeRef.current()
-      }
-
-      sseUnsubscribeRef.current = subscribeRealtimeSSE({
+      // Connect to Realtime Server-Sent Events (SSE) stream if not connected
+      if (!sseUnsubscribeRef.current) {
+        sseUnsubscribeRef.current = subscribeRealtimeSSE({
         onOpen: () => {
           setIsLiveSSE(true)
         },
@@ -370,8 +367,13 @@ export function usePumpSystem() {
         },
         onError: () => {
           setIsLiveSSE(false)
+          if (sseUnsubscribeRef.current) {
+            sseUnsubscribeRef.current()
+            sseUnsubscribeRef.current = null
+          }
         },
       })
+    }
 
       return true
     } catch {
@@ -587,7 +589,7 @@ export function usePumpSystem() {
           })
 
           if (!res.success) {
-            const errMsg = res.error?.message || 'Gagal mengirim perintah kontrol ke SCADA backend.'
+            const errMsg = res.error?.message || 'Gagal mengirim perintah kontrol ke server.'
             // Rollback optimistic update
             setRooms((prevRooms) =>
               prevRooms.map((room) => ({
@@ -605,7 +607,7 @@ export function usePumpSystem() {
             return { success: false, error: errMsg }
           }
         } catch (err: any) {
-          const errMsg = err?.message || 'Koneksi ke SCADA backend terputus.'
+          const errMsg = err?.message || 'Koneksi ke server terputus.'
           setRooms((prevRooms) =>
             prevRooms.map((room) => ({
               ...room,
@@ -656,7 +658,7 @@ export function usePumpSystem() {
         api.assets.issuePowerCommand(p.id, {
           desired_state: 'OFF',
           confirmation: true,
-          note: 'EMERGENCY STOP FROM WEB SCADA',
+          note: 'EMERGENCY STOP FROM WEB MONITORING',
         }).catch(console.warn)
       }
     }
@@ -1086,7 +1088,7 @@ export function usePumpSystem() {
             ...alm,
             status: 'ACKNOWLEDGED',
             acknowledgedAt: new Date().toLocaleTimeString('id-ID').replace(/\./g, ':'),
-            acknowledgedBy: currentUser?.full_name || 'Operator SCADA',
+            acknowledgedBy: currentUser?.full_name || 'Operator',
           }
         })
       )

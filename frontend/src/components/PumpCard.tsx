@@ -178,7 +178,7 @@ export const PumpCard: React.FC<PumpCardProps> = ({
           <Radio className="w-3 h-3 text-slate-400" />
           {station.sensorTag || 'TELEMETRY-OK'}
         </span>
-        <span className="font-semibold text-slate-500">SCADA Online</span>
+        <span className="font-semibold text-slate-500">Telemetry Online</span>
       </div>
     </article>
   )

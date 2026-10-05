@@ -27,7 +27,7 @@ interface PumpPerformanceChartsProps {
   allRooms: AreaRoom[]
 }
 
-type BarMetric = 'power' | 'flow' | 'temp'
+type BarMetric = 'power' | 'flow' | 'temp' | 'energy'
 
 // Custom tooltip for real-time telemetry stream
 const TelemetryTooltip = ({ active, payload, label }: any) => {
@@ -151,6 +151,15 @@ export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
           color: '#e11d48', // rose-600
           maxDomain: 90,
           getValue: (p: PumpAsset) => p.metrics?.motor_temp_c || (p.status === 'RUNNING' ? 48.0 : 25.0),
+        }
+      case 'energy':
+        return {
+          title: 'Total Konsumsi Energi (kWh)',
+          unit: 'kWh',
+          icon: Activity,
+          color: '#8b5cf6', // violet-500
+          maxDomain: 15000,
+          getValue: (p: PumpAsset) => p.metrics?.energy_kwh || 12000,
         }
     }
   }
@@ -338,6 +347,17 @@ export const PumpPerformanceCharts: React.FC<PumpPerformanceChartsProps> = ({
                 }`}
               >
                 Suhu (°C)
+              </button>
+              <button
+                type="button"
+                onClick={() => setBarMetric('energy')}
+                className={`px-2 py-1 rounded-md transition-all cursor-pointer ${
+                  barMetric === 'energy'
+                    ? 'bg-white text-violet-600 font-semibold shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Energi (kWh)
               </button>
             </div>
           </div>

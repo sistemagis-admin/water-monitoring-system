@@ -290,7 +290,7 @@ export const AreaManagementView: React.FC<AreaManagementViewProps> = ({
                   Delete Station
                 </AlertDialogTitle>
                 <div className="text-xs text-slate-500 m-0 font-normal">
-                  Permanently remove station from SCADA
+                  Permanently remove station from system
                 </div>
               </div>
             </div>

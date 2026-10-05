@@ -52,7 +52,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         setErrorMessage('Email atau kata sandi yang Anda masukkan salah. Silakan coba kembali.')
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Tidak dapat terhubung ke server SCADA. Periksa koneksi jaringan Anda.')
+      setErrorMessage(err.message || 'Tidak dapat terhubung ke server monitoring. Periksa koneksi jaringan Anda.')
     } finally {
       setIsLoading(false)
     }
@@ -85,7 +85,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           {/* Main Content Area (Headline & Description) */}
           <div className="my-auto py-8 relative z-10">
             <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold text-white tracking-tight leading-[1.2] mb-3.5">
-              Water SCADA &amp; Telemetry System
+              Water Monitoring &amp; Telemetry System
             </h1>
             <p className="text-xs sm:text-sm text-[#e0f3f8]/90 font-medium leading-relaxed max-w-md">
               Integrated industrial supervisory platform for real-time reservoir levels, flow distribution rates, discharge pressure, and pump motor automation.
@@ -107,7 +107,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             {/* Header Title */}
             <div className="text-center mb-6">
               <h2 className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight">
-                Sign In to SCADA
+                Sign In to System
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-1">
                 Enter your credentials to access system telemetry
@@ -183,7 +183,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 ) : (
                   <>
                     <LogIn className="size-4" />
-                    <span>Sign In to SCADA</span>
+                    <span>Sign In to System</span>
                   </>
                 )}
               </Button>
@@ -193,7 +193,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           {/* Legal Footer Note */}
           <div className="text-center mt-6 pt-2">
             <p className="text-[10px] text-slate-400 leading-normal max-w-sm mx-auto">
-              Protected industrial SCADA telemetry terminal. Authorized personnel access only.
+              Protected industrial telemetry terminal. Authorized personnel access only.
             </p>
           </div>
         </div>

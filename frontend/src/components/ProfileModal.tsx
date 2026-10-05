@@ -69,7 +69,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </Avatar>
             <div className="min-w-0 flex-1">
               <h4 className="font-heading font-semibold text-sm text-slate-900 truncate m-0">
-                {currentUser?.full_name || 'SCADA Operator'}
+                {currentUser?.full_name || 'System Operator'}
               </h4>
               <div className="flex items-center gap-1.5 text-slate-500 mt-1">
                 <Mail className="size-3.5 shrink-0" />

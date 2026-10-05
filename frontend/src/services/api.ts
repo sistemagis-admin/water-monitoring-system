@@ -24,6 +24,7 @@ export function getApiBaseUrl(): string {
 export const API_BASE_URL = getApiBaseUrl()
 
 const TOKEN_KEY = 'swpms_access_token'
+const REFRESH_TOKEN_KEY = 'swpms_refresh_token'
 const USER_KEY = 'swpms_user'
 
 export interface ApiUser {
@@ -62,9 +63,20 @@ export function setStoredToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token)
 }
 
+export function getStoredRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem(REFRESH_TOKEN_KEY)
+}
+
+export function setStoredRefreshToken(token: string) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(REFRESH_TOKEN_KEY, token)
+}
+
 export function removeStoredToken() {
   if (typeof window === 'undefined') return
   localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
 }
 
@@ -79,11 +91,63 @@ export function setStoredUser(user: ApiUser) {
   localStorage.setItem(USER_KEY, JSON.stringify(user))
 }
 
-// Generic Fetch Wrapper
+// Silent Refresh Coordinator (prevents parallel refresh stampedes)
+let activeRefreshPromise: Promise<string | null> | null = null
+
+async function performTokenRefresh(): Promise<string | null> {
+  const refreshToken = getStoredRefreshToken()
+  if (!refreshToken) {
+    removeStoredToken()
+    return null
+  }
+
+  try {
+    const baseUrl = getApiBaseUrl()
+    const res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    })
+
+    if (!res.ok) {
+      removeStoredToken()
+      return null
+    }
+
+    const json = await res.json()
+    if (json?.success && json?.data?.access_token) {
+      setStoredToken(json.data.access_token)
+      if (json.data.refresh_token) {
+        setStoredRefreshToken(json.data.refresh_token)
+      }
+      if (json.data.user) {
+        setStoredUser(json.data.user)
+      }
+      return json.data.access_token
+    }
+
+    removeStoredToken()
+    return null
+  } catch {
+    // If backend is momentarily unreachable, don't destroy tokens immediately
+    return null
+  }
+}
+
+// Generic Fetch Wrapper with Automatic Refresh and Retry
 async function request<T = any>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  isRetry = false
 ): Promise<ApiResponse<T>> {
+  const isAuthEndpoint =
+    endpoint.includes('/auth/login') ||
+    endpoint.includes('/auth/refresh') ||
+    endpoint.includes('/auth/signup') ||
+    endpoint.includes('/auth/register')
+
   const token = getStoredToken()
   const headers = new Headers(options.headers || {})
 
@@ -104,9 +168,29 @@ async function request<T = any>(
       headers,
     })
 
+    // If 401 Unauthorized occurs, attempt silent token refresh and retry once
     if (response.status === 401) {
-      // Stale or invalid token
-      removeStoredToken()
+      if (!isAuthEndpoint && !isRetry && getStoredRefreshToken()) {
+        if (!activeRefreshPromise) {
+          activeRefreshPromise = performTokenRefresh().finally(() => {
+            activeRefreshPromise = null
+          })
+        }
+
+        const newToken = await activeRefreshPromise
+        if (newToken) {
+          const retryHeaders = new Headers(options.headers || {})
+          if (!retryHeaders.has('Content-Type') && !(options.body instanceof FormData)) {
+            retryHeaders.set('Content-Type', 'application/json')
+          }
+          retryHeaders.set('Authorization', `Bearer ${newToken}`)
+          return request<T>(endpoint, { ...options, headers: retryHeaders }, true)
+        }
+      }
+
+      if (!isAuthEndpoint) {
+        removeStoredToken()
+      }
     }
 
     const json = await response.json().catch(() => ({
@@ -136,7 +220,7 @@ async function request<T = any>(
       data: null as any,
       error: {
         code: 'CONNECTION_ERROR',
-        message: err?.message || 'Tidak dapat terhubung ke server SCADA backend.',
+        message: err?.message || 'Tidak dapat terhubung ke server backend.',
       },
     }
   }
@@ -157,6 +241,7 @@ export const api = {
     login: async (credentials: { email: string; password: string }) => {
       const res = await request<{
         access_token: string
+        refresh_token?: string
         token_type: string
         expires_in: string
         user: ApiUser
@@ -166,6 +251,9 @@ export const api = {
       })
       if (res.success && res.data?.access_token) {
         setStoredToken(res.data.access_token)
+        if (res.data.refresh_token) {
+          setStoredRefreshToken(res.data.refresh_token)
+        }
         setStoredUser(res.data.user)
       }
       return res
@@ -176,22 +264,82 @@ export const api = {
       password: string
       role?: string
       site_id?: string
-    }) =>
-      request<{ user: ApiUser }>('/api/v1/auth/register', {
+    }) => {
+      const res = await request<{
+        access_token: string
+        refresh_token?: string
+        token_type: string
+        expires_in: string
+        user: ApiUser
+      }>('/api/v1/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
-      }),
+      })
+      if (res.success && res.data?.access_token) {
+        setStoredToken(res.data.access_token)
+        if (res.data.refresh_token) {
+          setStoredRefreshToken(res.data.refresh_token)
+        }
+        setStoredUser(res.data.user)
+      }
+      return res
+    },
     signup: async (userData: {
       email: string
       full_name: string
       password: string
       role?: string
       site_id?: string
-    }) =>
-      request<{ user: ApiUser }>('/api/v1/auth/signup', {
+    }) => {
+      const res = await request<{
+        access_token: string
+        refresh_token?: string
+        token_type: string
+        expires_in: string
+        user: ApiUser
+      }>('/api/v1/auth/signup', {
         method: 'POST',
         body: JSON.stringify(userData),
-      }),
+      })
+      if (res.success && res.data?.access_token) {
+        setStoredToken(res.data.access_token)
+        if (res.data.refresh_token) {
+          setStoredRefreshToken(res.data.refresh_token)
+        }
+        setStoredUser(res.data.user)
+      }
+      return res
+    },
+    refresh: async (customRefreshToken?: string) => {
+      const rt = customRefreshToken || getStoredRefreshToken()
+      if (!rt) {
+        return {
+          success: false,
+          data: null as any,
+          error: { code: 'AUTH_UNAUTHORIZED', message: 'Tidak ada refresh token.' },
+        }
+      }
+      const res = await request<{
+        access_token: string
+        refresh_token?: string
+        token_type: string
+        expires_in: string
+        user: ApiUser
+      }>('/api/v1/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: rt }),
+      })
+      if (res.success && res.data?.access_token) {
+        setStoredToken(res.data.access_token)
+        if (res.data.refresh_token) {
+          setStoredRefreshToken(res.data.refresh_token)
+        }
+        if (res.data.user) {
+          setStoredUser(res.data.user)
+        }
+      }
+      return res
+    },
     me: async () => {
       const res = await request<ApiUser>('/api/v1/auth/me')
       if (res.success && res.data) {

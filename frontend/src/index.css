@@ -81,7 +81,7 @@ body {
 }
 
 /* Subtle Industrial Blueprint Dot Grid Background */
-.bg-scada-canvas {
+.bg-monitoring-canvas {
   background-color: #f4f7fb;
   background-image: radial-gradient(rgba(0, 121, 158, 0.07) 1px, transparent 1px);
   background-size: 24px 24px;

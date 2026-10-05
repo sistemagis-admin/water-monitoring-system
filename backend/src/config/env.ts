@@ -17,8 +17,8 @@ const envSchema = z.object({
   MQTT_TOPIC_PREFIX: z.string().default('swpm/v1'),
 
   JWT_SECRET: z.string().default('swpm_super_secret_jwt_key_change_in_production_2026_ascon'),
-  ACCESS_TOKEN_TTL: z.string().default('15m'),
-  REFRESH_TOKEN_TTL: z.string().default('7d'),
+  ACCESS_TOKEN_TTL: z.string().default('7d'),
+  REFRESH_TOKEN_TTL: z.string().default('30d'),
 
   SSE_HEARTBEAT_INTERVAL: z.coerce.number().default(15000),
   DEVICE_OFFLINE_TIMEOUT: z.coerce.number().default(30000),

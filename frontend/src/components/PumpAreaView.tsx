@@ -146,7 +146,7 @@ export const PumpAreaView: React.FC<PumpAreaViewProps> = ({
 
   return (
     <div className="space-y-5 animate-fade-in select-none">
-      {/* 1. Tactical SCADA Asset Control Strip */}
+      {/* 1. Tactical Asset Control Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-mono font-medium shadow-xs">
@@ -486,7 +486,7 @@ export const PumpAreaView: React.FC<PumpAreaViewProps> = ({
                           </p>
                         </div>
 
-                        {/* Telemetry Metrics Grid (Hardware SCADA Box) */}
+                        {/* Telemetry Metrics Grid */}
                         <div className="grid grid-cols-2 gap-2.5 mb-4 bg-slate-50/80 p-3 rounded-xl text-xs">
                           <div className="flex items-center gap-2">
                             <div className="w-7 h-7 rounded-lg bg-cyan-100/60 text-[#00799e] flex items-center justify-center shrink-0">
@@ -587,7 +587,7 @@ export const PumpAreaView: React.FC<PumpAreaViewProps> = ({
                     <p className="text-[11px] text-slate-400 m-0 mt-1 max-w-[190px] font-normal leading-relaxed">
                       {selectedAreaFilter !== 'ALL'
                         ? `Register unit to ${rooms.find((r) => r.id === selectedAreaFilter)?.name || 'this station'}`
-                        : 'Register new pump unit to SCADA'}
+                        : 'Register new pump unit to system'}
                     </p>
                   </div>
                 )}
@@ -683,7 +683,7 @@ export const PumpAreaView: React.FC<PumpAreaViewProps> = ({
                   Confirm Delete Pump
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-xs text-slate-500 font-normal">
-                  This pump will be permanently removed from SCADA.
+                  This pump will be permanently removed from the system.
                 </AlertDialogDescription>
               </div>
             </div>

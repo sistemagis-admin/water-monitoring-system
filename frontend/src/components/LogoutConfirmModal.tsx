@@ -48,7 +48,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
                 Active user: <strong className="text-slate-800 font-semibold">{userName}</strong>. You will need to re-authenticate to access telemetry dashboards and pump controls.
               </>
             ) : (
-              'Are you sure you want to sign out? You will need your credentials to regain access to the SCADA system.'
+              'Are you sure you want to sign out? You will need your credentials to regain access to the monitoring system.'
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>

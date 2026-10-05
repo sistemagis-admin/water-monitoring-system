@@ -105,7 +105,7 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
                 Add Pump Asset
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 font-normal mt-0.5">
-                Register a new pump unit and configure SCADA telemetry parameters
+                Register a new pump unit and configure telemetry parameters
               </DialogDescription>
             </div>
           </div>
@@ -222,7 +222,7 @@ export const AddPumpModal: React.FC<AddPumpModalProps> = ({
                   Enable Remote Motor Control
                 </span>
                 <span className="text-[11px] text-slate-500 font-normal">
-                  Allow authorized operators to trigger start / stop commands from SCADA
+                  Allow authorized operators to trigger start / stop commands remotely
                 </span>
               </div>
             </div>

@@ -357,7 +357,7 @@ export const PumpManagementTable: React.FC<PumpManagementTableProps> = ({
                   Confirm Delete Pump
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-xs text-slate-500 m-0 font-normal mt-0.5">
-                  This action will permanently remove the pump from SCADA
+                  This action will permanently remove the pump from the system
                 </AlertDialogDescription>
               </div>
             </div>

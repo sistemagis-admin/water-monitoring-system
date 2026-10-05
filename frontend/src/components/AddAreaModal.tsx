@@ -61,7 +61,7 @@ export const AddAreaModal: React.FC<AddAreaModalProps> = ({
                 Add Plant Station
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-500 font-normal mt-0.5">
-                Configure plant area or station location for SCADA assets
+                Configure plant area or station location for pump assets
               </DialogDescription>
             </div>
           </div>

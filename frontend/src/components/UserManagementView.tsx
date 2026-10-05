@@ -79,7 +79,7 @@ interface RoleOption {
 const ROLE_OPTIONS: RoleOption[] = [
   {
     id: 'OPERATOR',
-    title: 'Operator SCADA',
+    title: 'Field Operator',
     label: 'OPERATOR',
     badgeText: 'OPERATOR',
     icon: Shield,
@@ -145,31 +145,31 @@ interface PermissionItem {
 }
 
 const PERMISSIONS_DATA: PermissionItem[] = [
-  // 1. SCADA Operations
+  // 1. Pump Operations
   {
     id: 'p_pump_toggle',
-    module: 'SCADA Operations',
+    module: 'Pump Operations',
     name: 'Manual Pump Start / Stop Switch',
-    desc: 'Start and stop motor pump units manually via web SCADA interface.',
+    desc: 'Start and stop motor pump units manually via web interface.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_estop',
-    module: 'SCADA Operations',
+    module: 'Pump Operations',
     name: 'Emergency Station Stop',
     desc: 'Instantly shut down all station pumps upon critical conditions.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_reset',
-    module: 'SCADA Operations',
+    module: 'Pump Operations',
     name: 'Reset Trip & Overload State',
     desc: 'Clear pump protective lockouts once electrical or mechanical issues are resolved.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: true, VIEWER: false },
   },
   {
     id: 'p_pump_vfd',
-    module: 'SCADA Operations',
+    module: 'Pump Operations',
     name: 'VFD Speed & Pressure Setpoints',
     desc: 'Adjust inverter output frequency and discharge manifold target pressure.',
     roles: { SUPER_ADMIN: true, ENGINEER: true, OPERATOR: false, VIEWER: false },
@@ -561,7 +561,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
 
   return (
     <div className="space-y-5 animate-fade-in select-none">
-      {/* 1. SCADA RBAC Access Strip */}
+      {/* 1. RBAC Access Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-mono font-medium shadow-xs">
@@ -1279,7 +1279,7 @@ export const UserManagementView: React.FC<UserManagementViewProps> = ({
                   Add System User
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400 m-0 font-normal">
-                  Create a new account with role-based SCADA system privileges
+                  Create a new account with role-based system privileges
                 </DialogDescription>
               </div>
             </div>

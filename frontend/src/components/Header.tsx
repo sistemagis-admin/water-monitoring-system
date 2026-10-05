@@ -13,7 +13,7 @@ interface HeaderProps {
 
 const MENU_INFO: Record<string, { title: string; subtitle: string }> = {
   dashboard: {
-    title: 'SCADA Dashboard',
+    title: 'Monitoring Dashboard',
     subtitle: 'Real-time telemetry, pump operations, and plant overview',
   },
   areas: {
@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const currentMenu = MENU_INFO[activeTab] || {
     title: 'Water Monitoring System',
-    subtitle: 'SCADA & Industrial IoT Dashboard',
+    subtitle: 'Industrial IoT & Telemetry Dashboard',
   }
 
   const currentDate = new Date().toLocaleDateString('en-US', {

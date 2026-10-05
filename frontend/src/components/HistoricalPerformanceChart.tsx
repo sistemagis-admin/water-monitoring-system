@@ -99,7 +99,7 @@ const METRICS_CONFIG: Record<MetricKey, MetricConfig> = {
   },
 }
 
-// Custom SCADA Historical Tooltip
+// Custom Historical Tooltip
 const HistoricalTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload || payload.length === 0) return null
 

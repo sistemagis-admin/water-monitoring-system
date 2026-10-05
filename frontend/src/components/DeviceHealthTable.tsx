@@ -62,7 +62,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="font-heading font-bold text-lg text-slate-900 m-0">
-              IoT Edge Gateways & SCADA Nodes
+              IoT Edge Gateways & Telemetry Nodes
             </h3>
             <Badge variant="outline" className="font-mono text-[10px] font-semibold text-slate-600 bg-slate-100 border-slate-200">
               FIELD BUS
@@ -108,7 +108,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
             Belum Ada IoT Gateway Terdaftar
           </p>
           <span className="text-xs text-slate-500 font-normal my-2 block max-w-sm">
-            Daftarkan node gateway telemetri baru untuk mulai menghubungkan transmisi sinyal sensor pompa ke SCADA.
+            Daftarkan node gateway telemetri baru untuk mulai menghubungkan transmisi sinyal sensor pompa ke sistem.
           </span>
           {onOpenAddDevice && (
             <Button
@@ -166,7 +166,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
                     <div className="flex items-center gap-1.5 shrink-0">
                       <div
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider border select-none leading-none",
+                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold tracking-wider border select-none uppercase",
                           isOnline
                             ? "bg-emerald-50 text-emerald-700 border-emerald-200/90"
                             : isStale
@@ -185,7 +185,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
                             )}
                           />
                         </span>
-                        <span className="pt-[0.5px]">{gw.status}</span>
+                        <span>{gw.status}</span>
                       </div>
 
                       {onDeleteDevice && (
@@ -203,7 +203,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
                     </div>
                   </div>
 
-                  {/* SCADA Telemetry & Hardware Matrix 4-Grid */}
+                  {/* Telemetry & Hardware Matrix 4-Grid */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 my-3.5">
                     {/* 1. IP Address */}
                     <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
@@ -357,7 +357,7 @@ export const DeviceHealthTable: React.FC<DeviceHealthTableProps> = ({
                   Hapus IoT Gateway
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-xs text-slate-500 m-0 font-normal mt-0.5">
-                  Konfirmasi pencopotan node gateway dari jaringan telemetri SCADA
+                  Konfirmasi pencopotan node gateway dari jaringan telemetri
                 </AlertDialogDescription>
               </div>
             </div>

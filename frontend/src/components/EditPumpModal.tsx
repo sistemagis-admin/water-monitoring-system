@@ -238,7 +238,7 @@ export const EditPumpModal: React.FC<EditPumpModalProps> = ({
                   Enable Remote Motor Control
                 </span>
                 <span className="text-[11px] text-slate-500 font-normal">
-                  Allow authorized operators to trigger start / stop commands from SCADA
+                  Allow authorized operators to trigger start / stop commands remotely
                 </span>
               </div>
             </div>

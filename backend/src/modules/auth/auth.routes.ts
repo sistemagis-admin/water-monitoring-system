@@ -2,7 +2,15 @@ import { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import bcrypt from 'bcryptjs';
 import { query } from '../../infrastructure/db/index.js';
 import { AppError } from '../../shared/errors/app-error.js';
-import { loginBodySchema, registerBodySchema, loginResponseSchema, logoutResponseSchema, meResponseSchema } from './auth.schema.js';
+import {
+  loginBodySchema,
+  registerBodySchema,
+  loginResponseSchema,
+  logoutResponseSchema,
+  meResponseSchema,
+  refreshTokenBodySchema,
+  refreshResponseSchema,
+} from './auth.schema.js';
 import { ROLE_PERMISSIONS, RoleName } from '../../config/constants.js';
 import { env } from '../../config/env.js';
 
@@ -55,6 +63,10 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
     };
 
     const token = fastify.jwt.sign(tokenPayload, { expiresIn: env.ACCESS_TOKEN_TTL });
+    const refreshToken = fastify.jwt.sign(
+      { id: newUser.id, type: 'refresh' },
+      { expiresIn: env.REFRESH_TOKEN_TTL }
+    );
 
     // Audit log
     await query(
@@ -67,6 +79,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       success: true,
       data: {
         access_token: token,
+        refresh_token: refreshToken,
         token_type: 'Bearer',
         expires_in: env.ACCESS_TOKEN_TTL,
         user: {
@@ -163,6 +176,10 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       };
 
       const token = fastify.jwt.sign(tokenPayload, { expiresIn: env.ACCESS_TOKEN_TTL });
+      const refreshToken = fastify.jwt.sign(
+        { id: user.id, type: 'refresh' },
+        { expiresIn: env.REFRESH_TOKEN_TTL }
+      );
 
       // Audit login
       await query(
@@ -175,6 +192,89 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         success: true,
         data: {
           access_token: token,
+          refresh_token: refreshToken,
+          token_type: 'Bearer',
+          expires_in: env.ACCESS_TOKEN_TTL,
+          user: {
+            id: user.id,
+            email: user.email,
+            full_name: user.full_name,
+            role: user.role,
+            permissions,
+            site_id: user.site_id,
+          },
+        },
+      });
+    }
+  );
+
+  // POST /api/v1/auth/refresh
+  fastify.post(
+    '/refresh',
+    {
+      schema: {
+        tags: ['Auth'],
+        summary: 'Refresh Access Token',
+        description: 'Submit a valid refresh token to get a new access token and refresh token.',
+        body: refreshTokenBodySchema,
+        response: {
+          200: refreshResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { refresh_token } = request.body;
+
+      let decoded: any;
+      try {
+        decoded = fastify.jwt.verify(refresh_token);
+      } catch (err: any) {
+        throw AppError.unauthorized('Invalid or expired refresh token', 'AUTH_UNAUTHORIZED');
+      }
+
+      if (!decoded || decoded.type !== 'refresh' || !decoded.id) {
+        throw AppError.unauthorized('Invalid refresh token type', 'AUTH_UNAUTHORIZED');
+      }
+
+      const userRes = await query(
+        `SELECT id, email, full_name, role, status, site_id
+         FROM users
+         WHERE id = $1`,
+        [decoded.id]
+      );
+
+      if (userRes.rows.length === 0) {
+        throw AppError.unauthorized('User not found', 'AUTH_UNAUTHORIZED');
+      }
+
+      const user = userRes.rows[0];
+
+      if (user.status !== 'ACTIVE') {
+        throw AppError.forbidden('User account is disabled', 'AUTH_FORBIDDEN');
+      }
+
+      const role = user.role as RoleName;
+      const permissions = ROLE_PERMISSIONS[role] || [];
+
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        permissions,
+        site_id: user.site_id,
+      };
+
+      const newAccessToken = fastify.jwt.sign(tokenPayload, { expiresIn: env.ACCESS_TOKEN_TTL });
+      const newRefreshToken = fastify.jwt.sign(
+        { id: user.id, type: 'refresh' },
+        { expiresIn: env.REFRESH_TOKEN_TTL }
+      );
+
+      return reply.send({
+        success: true,
+        data: {
+          access_token: newAccessToken,
+          refresh_token: newRefreshToken,
           token_type: 'Bearer',
           expires_in: env.ACCESS_TOKEN_TTL,
           user: {

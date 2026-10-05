@@ -253,7 +253,7 @@ export const AlarmManagementView: React.FC<AlarmManagementViewProps> = ({
               ...a,
               status: 'ACKNOWLEDGED',
               acknowledgedAt: new Date().toLocaleTimeString('id-ID'),
-              acknowledgedBy: currentUser?.full_name || 'Operator SCADA',
+              acknowledgedBy: currentUser?.full_name || 'Operator',
             }
           : a
       )
@@ -463,7 +463,7 @@ export const AlarmManagementView: React.FC<AlarmManagementViewProps> = ({
 
   return (
     <div className="space-y-5 animate-fade-in select-none">
-      {/* 1. SCADA Alarm Dispatch Strip */}
+      {/* 1. Alarm Dispatch Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-mono font-medium shadow-xs">

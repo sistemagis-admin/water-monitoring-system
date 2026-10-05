@@ -139,7 +139,7 @@ export function App() {
   const handleDeleteArea = async (areaId: string) => {
     try {
       await deleteArea(areaId)
-      toast.info('Station Deleted', 'Station removed from SCADA system.')
+      toast.info('Station Deleted', 'Station removed from system.')
     } catch {
       toast.error('Failed to Delete Station', 'An error occurred while deleting station.')
     }
@@ -166,7 +166,7 @@ export function App() {
   const handleDeletePump = async (pumpId: string) => {
     try {
       await deletePump(pumpId)
-      toast.info('Pump Asset Deleted', 'Pump unit removed from SCADA system.')
+      toast.info('Pump Asset Deleted', 'Pump unit removed from system.')
     } catch {
       toast.error('Failed to Delete Pump', 'An error occurred while deleting pump unit.')
     }
@@ -202,7 +202,7 @@ export function App() {
   const handleDeleteGateway = async (gatewayId: string) => {
     try {
       await deleteGateway(gatewayId)
-      toast.info('IoT Gateway Deleted', 'Gateway node removed from SCADA system.')
+      toast.info('IoT Gateway Deleted', 'Gateway node removed from system.')
     } catch {
       toast.error('Failed to Delete Gateway', 'An error occurred while deleting IoT gateway.')
     }
@@ -230,7 +230,7 @@ export function App() {
 
     const res = await toggleMotor(pumpIdOrRoomIdx, motorIndex)
     if (res && res.success === false) {
-      toast.error('Gagal Mengubah Status Pompa', res.error || 'Perintah ditolak oleh SCADA backend atau gateway.')
+      toast.error('Gagal Mengubah Status Pompa', res.error || 'Perintah ditolak oleh backend atau gateway.')
       return
     }
 
@@ -249,7 +249,7 @@ export function App() {
 
   const handleAcknowledgeAlarm = async (alarmId: string) => {
     await acknowledgeAlarm(alarmId)
-    toast.info('Alarm Acknowledged', 'Operator acknowledgment recorded in SCADA audit trail.')
+    toast.info('Alarm Acknowledged', 'Operator acknowledgment recorded in audit trail.')
   }
 
   // If not authenticated, render Login Page
@@ -265,7 +265,7 @@ export function App() {
           <Loader2 className="w-6 h-6 animate-spin" />
         </div>
         <h3 className="font-heading font-semibold text-xl mb-1">
-          Memuat Sistem SCADA...
+          Memuat Sistem Monitoring...
         </h3>
         <p className="text-xs text-slate-400">
           Menghubungkan ke Fastify Backend &amp; Stream Telemetri Real-time
@@ -329,10 +329,13 @@ export function App() {
             onSelectTab={setActiveTab}
           />
 
-          {/* TAB 0: DASHBOARD MONITORING SCADA */}
+          {/* TAB 0: DASHBOARD MONITORING */}
           {activeTab === 'dashboard' && (
             <DashboardMonitoringView
               rooms={rooms}
+              alarms={alarms}
+              gateways={gateways}
+              stats={stats}
               onToggleMotor={handleToggleMotor}
               onOpenAddPump={() => handleOpenAddPump()}
               lastUpdated={stats.lastUpdated}

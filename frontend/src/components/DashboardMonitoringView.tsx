@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import type { AreaRoom, PumpAsset } from '../types/pump'
+import type { AreaRoom, PumpAsset, AlarmItem, DeviceGateway, SimulationStats } from '../types/pump'
 import {
   Gauge,
   Droplets,
@@ -13,9 +13,14 @@ import {
   Search,
   Radio,
   LayoutGrid,
+  EyeOff,
+  AlertTriangle,
+  Server,
+  Wifi,
+  ShieldCheck,
+  LineChart,
   List,
   Eye,
-  EyeOff,
 } from 'lucide-react'
 import { PumpPerformanceCharts } from './PumpPerformanceCharts'
 import { HistoricalPerformanceChart } from './HistoricalPerformanceChart'
@@ -38,6 +43,9 @@ interface DashboardMonitoringViewProps {
   onOpenAddPump?: () => void
   lastUpdated?: string
   isBackendOnline?: boolean
+  alarms?: AlarmItem[]
+  gateways?: DeviceGateway[]
+  stats?: SimulationStats
 }
 
 interface EnrichedPump extends PumpAsset {
@@ -52,6 +60,9 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
   onOpenAddPump,
   lastUpdated,
   isBackendOnline = true,
+  alarms = [],
+  gateways = [],
+  stats: _stats,
 }) => {
   // Fleet View Controls
   const [fleetStatusFilter, setFleetStatusFilter] = useState<'ALL' | 'RUNNING' | 'STOPPED' | 'FAULT'>('ALL')
@@ -133,6 +144,24 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
     .toFixed(1)
 
   const displayLastUpdated = lastUpdated || 'Terhubung'
+  
+  // Recent Anomalies (Active Alarms)
+  const activeAnomalies = useMemo(() => {
+    return alarms.filter(a => a.status === 'OPEN').sort((a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime());
+  }, [alarms]);
+
+  // Derived Performance Statistics
+  const gatewayOnlineCount = gateways.filter(g => g.status === 'ONLINE').length;
+  const avgRssi = gateways.length > 0 ? (gateways.reduce((acc, g) => acc + g.rssi, 0) / gateways.length).toFixed(0) : '-65';
+  
+  // Specific Energy Consumption (SEC) estimation (kWh per m3)
+  const sec = totalFlowRate > 0 ? (Number(totalPower) / totalFlowRate).toFixed(2) : '0.00';
+  
+  // Equipment Health Score
+  const healthScore = totalPumps > 0 ? (((totalPumps - faultPumps) / totalPumps) * 100).toFixed(1) : '100.0';
+  
+  // Alarm / Error Rate (Last 24h mock or based on open alarms)
+  const faultRate = totalPumps > 0 ? ((faultPumps / totalPumps) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="space-y-6 animate-fade-in select-none">
@@ -170,7 +199,7 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               Semua Stasiun Terhubung
             </span>
-            <span className="text-slate-400 font-mono text-[10px]">SCADA Grid</span>
+            <span className="text-slate-400 font-mono text-[10px]">Plant Network</span>
           </div>
         </div>
 
@@ -266,13 +295,158 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
 
           <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <span className="text-slate-700 font-medium flex items-center gap-1.5 font-mono text-[11px]">
-              <span className={cn("w-2 h-2 rounded-full", isBackendOnline ? "bg-emerald-500" : "bg-amber-500")} />
+            <span className={`w-2 h-2 rounded-full ${isBackendOnline ? "bg-emerald-500" : "bg-amber-500"}`} />
               {isBackendOnline ? 'Gateway Sinkron' : 'Mode Offline'}
             </span>
-            <span className="text-slate-400 font-mono text-[10px]">SCADA RTU</span>
+            <span className="text-slate-400 font-mono text-[10px]">Telemetry Node</span>
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 1.2. SYSTEM PERFORMANCE & RELIABILITY CARDS (NEW)                         */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {/* Card A: Ketersediaan Jaringan (Network Uptime) */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
+              KONEKTIVITAS EDGE
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <Server className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-2xl font-extrabold text-slate-900 tracking-tight">
+                {gatewayOnlineCount}/{gateways.length || 1}
+              </span>
+              <span className="font-mono text-xs text-slate-500 font-semibold">Online</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-1.5">
+              <Wifi className="w-3.5 h-3.5 text-slate-400" />
+              Sinyal Rata-rata: {avgRssi} dBm
+            </p>
+          </div>
+        </div>
+
+        {/* Card B: OEE / Kesehatan Aset */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
+              KESEHATAN ASET (OEE)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-2xl font-extrabold text-emerald-600 tracking-tight">
+                {healthScore}%
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              {faultPumps === 0 ? 'Semua unit beroperasi normal' : `${faultPumps} unit memerlukan perbaikan`}
+            </p>
+          </div>
+        </div>
+
+        {/* Card C: Efisiensi Energi (SEC) */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
+              EFISIENSI ENERGI (SEC)
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Zap className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-2xl font-extrabold text-slate-900 tracking-tight">
+                {sec}
+              </span>
+              <span className="font-mono text-xs text-slate-500 font-semibold">kWh/m³</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              Rasio konsumsi daya per kubik air
+            </p>
+          </div>
+        </div>
+
+        {/* Card D: Tingkat Error / Fault Rate */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between">
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
+              TINGKAT GANGGUAN
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <LineChart className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-2xl font-extrabold text-slate-900 tracking-tight">
+                {faultRate}%
+              </span>
+              <span className="font-mono text-xs text-slate-500 font-semibold">Fault Rate</span>
+            </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              {activeAnomalies.length} Anomali aktif di sistem
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 1.5. ANOMALY TICKER & RECENT INSIGHTS (NEW)                               */}
+      {/* ========================================================================= */}
+      {activeAnomalies.length > 0 && (
+        <div className="bg-rose-50/50 rounded-2xl p-4 shadow-xs border border-rose-200/60 flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-rose-200/50 animate-ping opacity-25"></div>
+              <AlertTriangle className="w-5 h-5 relative z-10" />
+            </div>
+            <div>
+              <h4 className="font-heading font-extrabold text-sm text-rose-900 m-0">Anomali Terdeteksi</h4>
+              <p className="text-[11px] text-rose-700/80 font-mono mt-0.5">{activeAnomalies.length} Sistem Membutuhkan Perhatian</p>
+            </div>
+          </div>
+          
+          <div className="flex-1 flex gap-3 overflow-x-auto pb-2 md:pb-0 hide-scrollbar snap-x">
+            {activeAnomalies.slice(0, 3).map(anomaly => (
+              <div key={anomaly.id} className="min-w-[260px] max-w-[320px] bg-white rounded-xl p-3 border border-rose-100 shadow-sm shrink-0 snap-start flex flex-col justify-between">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-900 text-white shrink-0">
+                      {anomaly.code}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-800 truncate" title={anomaly.assetName}>
+                      {anomaly.assetName}
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-mono text-slate-400 whitespace-nowrap">
+                    {new Date(anomaly.openedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-snug line-clamp-2" title={anomaly.message}>
+                  {anomaly.message}
+                </p>
+              </div>
+            ))}
+            {activeAnomalies.length > 3 && (
+              <div className="min-w-[120px] flex items-center justify-center p-3 shrink-0">
+                <span className="text-xs font-semibold text-rose-600 hover:text-rose-800 cursor-pointer transition-colors">
+                  +{activeAnomalies.length - 3} lainnya...
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2. CARD PEMANTAUAN SELURUH POMPA (HEADER TER-JUSTIFY RAPI KIRI & KANAN)   */}
@@ -416,7 +590,7 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                     ? "bg-white text-slate-900 shadow-2xs"
                     : "text-slate-500 hover:text-slate-800"
                 )}
-                title="Tampilan Tabel SCADA"
+                title="Tampilan Tabel Pompa"
               >
                 <List className="w-3.5 h-3.5" />
               </button>
@@ -644,7 +818,7 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
           </div>
         ) : (
           /* ========================================================= */
-          /* TABLE VIEW: Padat, High-Density SCADA Fleet List          */
+          /* TABLE VIEW: Padat, High-Density Fleet List                */
           /* ========================================================= */
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-xs font-mono">

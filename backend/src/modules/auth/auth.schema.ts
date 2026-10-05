@@ -25,6 +25,21 @@ export const userProfileSchema = z.object({
 export const loginResponseSchema = standardSuccessResponseSchema(
   z.object({
     access_token: z.string(),
+    refresh_token: z.string().optional(),
+    token_type: z.literal('Bearer'),
+    expires_in: z.string(),
+    user: userProfileSchema,
+  })
+);
+
+export const refreshTokenBodySchema = z.object({
+  refresh_token: z.string().min(1, 'Refresh token is required'),
+});
+
+export const refreshResponseSchema = standardSuccessResponseSchema(
+  z.object({
+    access_token: z.string(),
+    refresh_token: z.string().optional(),
     token_type: z.literal('Bearer'),
     expires_in: z.string(),
     user: userProfileSchema,

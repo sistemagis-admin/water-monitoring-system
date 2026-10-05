@@ -29,7 +29,11 @@ const authPluginAsync: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           throw AppError.unauthorized('No authorization token provided');
         }
 
-        const decoded = fastify.jwt.verify<AuthUserPayload>(token);
+        const decoded = fastify.jwt.verify<AuthUserPayload & { type?: string }>(token);
+
+        if (decoded.type === 'refresh') {
+          throw AppError.unauthorized('Cannot use refresh token for API access');
+        }
 
         // Verify user is still active in DB
         const userRes = await query(
