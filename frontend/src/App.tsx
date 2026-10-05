@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { AreaRoom, PumpAsset } from './types/pump'
 import { usePumpSystem } from './hooks/usePumpSystem'
 import { useToast } from './context/ToastContext'
@@ -21,7 +21,8 @@ import { LoginPage } from './components/LoginPage'
 import { ProfileModal } from './components/ProfileModal'
 import { UserManagementView } from './components/UserManagementView'
 import { AlarmManagementView } from './components/AlarmManagementView'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { cn } from 'cn'
 
 export function App() {
   const toast = useToast()
@@ -68,6 +69,35 @@ export function App() {
   const [isAddSensorOpen, setIsAddSensorOpen] = useState(false)
   const [isAddDeviceOpen, setIsAddDeviceOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('sidebar_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('sidebar_collapsed', String(next))
+      } catch {}
+      return next
+    })
+  }
+
+  // Keyboard shortcut: Ctrl+B or Cmd+B to toggle sidebar (unseen craft detail)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        handleToggleSidebar()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleOpenAddPump = (areaId?: string) => {
     setAddPumpAreaId(areaId)
@@ -241,18 +271,48 @@ export function App() {
 
   return (
     <div className="min-h-screen w-full bg-[#F4F7FB] text-slate-900 flex antialiased selection:bg-[#00799e] selection:text-white">
-      {/* Left Sidebar (Sticky Full-Height Panel) */}
-      <div className="w-64 lg:w-72 bg-white border-r border-slate-200/80 p-6 flex flex-col justify-between shrink-0 sticky top-0 h-screen overflow-y-auto">
-        <Sidebar
-          activeTab={activeTab}
-          currentUser={currentUser}
-          openAlarmsCount={alarms.filter((a) => a.status === 'OPEN').length}
-          onSelectTab={setActiveTab}
-          onProfileClick={() => setIsProfileOpen(true)}
-          onOpenAddArea={() => setIsAddAreaOpen(true)}
-          onLogout={() => setIsLogoutConfirmOpen(true)}
-        />
-      </div>
+      {/* Left Sidebar (Sticky Full-Height Panel with Floating Seam Toggle) */}
+      <aside
+        className={cn(
+          "relative bg-white border-r border-slate-200/80 shrink-0 sticky top-0 h-screen transition-all duration-300 ease-out z-30 select-none",
+          isSidebarCollapsed ? "w-20" : "w-68 lg:w-72"
+        )}
+      >
+        {/* Floating Seam Toggle Button: Anchored on the dividing border */}
+        <button
+          type="button"
+          onClick={handleToggleSidebar}
+          aria-label={isSidebarCollapsed ? "Perbesar sidebar (Ctrl+B)" : "Perkecil sidebar (Ctrl+B)"}
+          title={isSidebarCollapsed ? "Perbesar sidebar (Ctrl+B)" : "Perkecil sidebar (Ctrl+B)"}
+          className="absolute -right-3 top-8 z-40 size-6 rounded-full bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:bg-slate-50 hover:shadow-xs active:scale-90 flex items-center justify-center text-slate-400 hover:text-slate-800 transition-all duration-150 cursor-pointer group"
+        >
+          {isSidebarCollapsed ? (
+            <ChevronRight className="size-3.5 stroke-[2.25] text-slate-500 group-hover:text-slate-800 transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="size-3.5 stroke-[2.25] text-slate-500 group-hover:text-slate-800 transition-transform group-hover:-translate-x-0.5" />
+          )}
+        </button>
+
+        {/* Inner Scrollable Sidebar Content */}
+        <div
+          className={cn(
+            "h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden transition-all duration-300 ease-out",
+            isSidebarCollapsed ? "p-3" : "p-6"
+          )}
+        >
+          <Sidebar
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={handleToggleSidebar}
+            activeTab={activeTab}
+            currentUser={currentUser}
+            openAlarmsCount={alarms.filter((a) => a.status === 'OPEN').length}
+            onSelectTab={setActiveTab}
+            onProfileClick={() => setIsProfileOpen(true)}
+            onOpenAddArea={() => setIsAddAreaOpen(true)}
+            onLogout={() => setIsLogoutConfirmOpen(true)}
+          />
+        </div>
+      </aside>
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 p-6 sm:p-8 lg:p-8 flex flex-col justify-between overflow-y-auto min-h-screen">
@@ -270,6 +330,8 @@ export function App() {
               rooms={rooms}
               onToggleMotor={handleToggleMotor}
               onOpenAddPump={() => handleOpenAddPump()}
+              lastUpdated={stats.lastUpdated}
+              isBackendOnline={isBackendOnline}
             />
           )}
 

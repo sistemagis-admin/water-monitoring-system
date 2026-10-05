@@ -57,3 +57,42 @@ export const siteSummarySchema = standardSuccessResponseSchema(
     }),
   })
 );
+
+export const dashboardHistoricalQuerySchema = z.object({
+  site_id: z.string().optional(),
+  area_id: z.string().optional().default('ALL'),
+  timeframe: z.enum(['24h', '7d', '30d', '1y', 'custom']).default('24h'),
+  from: z.string().optional(),
+  to: z.string().optional(),
+});
+
+export const dashboardHistoricalResponseSchema = standardSuccessResponseSchema(
+  z.object({
+    area_id: z.string(),
+    timeframe: z.string(),
+    from: z.string(),
+    to: z.string(),
+    points: z.array(
+      z.object({
+        timestamp: z.string(),
+        label: z.string(),
+        full_label: z.string(),
+        flow: z.number(),
+        pressure: z.number(),
+        power: z.number(),
+        temp: z.number(),
+      })
+    ),
+    summary: z.record(
+      z.string(),
+      z.object({
+        min: z.number(),
+        max: z.number(),
+        avg: z.number(),
+        total: z.number().optional(),
+        unit: z.string(),
+      })
+    ),
+  })
+);
+

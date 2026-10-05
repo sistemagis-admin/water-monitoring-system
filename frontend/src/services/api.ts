@@ -218,7 +218,7 @@ export const api = {
       request<Array<{ role: string; label: string; permissions: string[] }>>('/api/v1/users/roles'),
   },
 
-  // 3. Dashboard KPI Summary
+  // 3. Dashboard KPI Summary & Historical Telemetry
   dashboard: {
     getSummary: () =>
       request<{
@@ -234,6 +234,36 @@ export const api = {
         }
         alarms: { active: number; critical: number; high: number; medium: number; low: number }
       }>('/api/v1/dashboard/summary'),
+    getHistoricalTelemetry: (params?: {
+      area_id?: string
+      site_id?: string
+      timeframe?: '24h' | '7d' | '30d' | '1y' | 'custom'
+      from?: string
+      to?: string
+    }) => {
+      const q = new URLSearchParams()
+      if (params?.area_id) q.append('area_id', params.area_id)
+      if (params?.site_id) q.append('site_id', params.site_id)
+      if (params?.timeframe) q.append('timeframe', params.timeframe)
+      if (params?.from) q.append('from', params.from)
+      if (params?.to) q.append('to', params.to)
+      return request<{
+        area_id: string
+        timeframe: string
+        from: string
+        to: string
+        points: Array<{
+          timestamp: string
+          label: string
+          full_label: string
+          flow: number
+          pressure: number
+          power: number
+          temp: number
+        }>
+        summary: Record<string, { min: number; max: number; avg: number; total?: number; unit: string }>
+      }>(`/api/v1/dashboard/historical-telemetry?${q.toString()}`)
+    },
   },
 
   // 4. Sites Management

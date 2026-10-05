@@ -248,21 +248,45 @@ export function usePumpSystem() {
           if (event === 'telemetry.update' && data?.asset_id) {
             setRooms((prevRooms) =>
               prevRooms.map((room) => {
+                const targetPump = room.pumps.find(
+                  (p) => p.id === data.asset_id || p.code === data.asset_code
+                )
+                if (!targetPump) return room
+
                 const updatedPumps = room.pumps.map((pump) => {
                   if (pump.id === data.asset_id || pump.code === data.asset_code) {
                     const nextMetrics = { ...pump.metrics, ...(data.metrics || {}) }
                     return {
                       ...pump,
                       metrics: nextMetrics,
-                      status: data.metrics?.pump_running ? 'RUNNING' : pump.status,
+                      status:
+                        data.metrics?.pump_running !== undefined
+                          ? data.metrics.pump_running
+                            ? ('RUNNING' as PumpStatus)
+                            : ('STOPPED' as PumpStatus)
+                          : pump.status,
                     }
                   }
                   return pump
-                }) as [PumpAsset, PumpAsset]
+                })
+
+                const avgP =
+                  updatedPumps.length > 0
+                    ? Math.max(...updatedPumps.map((p) => p.metrics.pressure_bar || 0))
+                    : 0
+                const sumF = updatedPumps.reduce((acc, p) => acc + (p.metrics.flow_m3h || 0), 0)
+                const sumPow = updatedPumps.reduce((acc, p) => acc + (p.metrics.power_kw || 0), 0)
 
                 return {
                   ...room,
+                  pressure: avgP > 0 ? avgP : room.pressure,
+                  flowRate: sumF > 0 ? sumF : room.flowRate,
                   pumps: updatedPumps,
+                  history: {
+                    pressure: avgP > 0 ? [...room.history.pressure.slice(1), avgP] : room.history.pressure,
+                    flowRate: sumF > 0 ? [...room.history.flowRate.slice(1), sumF] : room.history.flowRate,
+                    power: sumPow > 0 ? [...room.history.power.slice(1), sumPow] : room.history.power,
+                  },
                 }
               })
             )
@@ -388,13 +412,16 @@ export function usePumpSystem() {
     }
   }, [fetchBackendData])
 
-  // Real-time clock update & dynamic physics step
+  // Real-time clock update & dynamic physics step (only when offline / demo fallback)
   useEffect(() => {
+    // If backend SSE is active, real data flows through SSE onMessage. Do not run local jitter.
+    if (isBackendOnline && isLiveSSE) return
+
     const interval = setInterval(() => {
-      const nowStr = new Date().toLocaleTimeString('id-ID').replace(/\./g, ':')
+      const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(/\./g, ':')
       setLastTime(nowStr)
 
-      // Step rooms & pumps physics if active
+      // Step rooms & pumps physics if active (offline fallback only)
       setRooms((prevRooms) =>
         prevRooms.map((room) => {
           const m1Running = room.pumps[0]?.status === 'RUNNING' ? 1 : 0
@@ -458,30 +485,10 @@ export function usePumpSystem() {
           }
         })
       )
-
-      // Sync sensor live readings
-      setSensors((prevSensors) =>
-        prevSensors.map((sensor) => {
-          let updatedVal = sensor.currentValue
-          if (sensor.metricCode === 'pressure_bar') {
-            const matchedRoom = rooms.find((r) => r.id === sensor.targetId)
-            if (matchedRoom) updatedVal = +matchedRoom.pressure.toFixed(2)
-          } else if (sensor.metricCode === 'flow_m3h') {
-            const matchedRoom = rooms.find((r) => r.id === sensor.targetId)
-            if (matchedRoom) updatedVal = +matchedRoom.flowRate.toFixed(1)
-          } else if (sensor.metricCode === 'tank_level_pct') {
-            updatedVal = +(sensor.currentValue + (Math.random() - 0.5) * 0.1).toFixed(1)
-          }
-          return {
-            ...sensor,
-            currentValue: updatedVal,
-          }
-        })
-      )
-    }, 1000)
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [rooms])
+  }, [isBackendOnline, isLiveSSE])
 
   // Toggle pump motor power (Issues remote command to Fastify backend)
   const togglePumpPower = useCallback(

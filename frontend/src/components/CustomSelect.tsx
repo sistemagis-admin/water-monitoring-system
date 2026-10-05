@@ -1,5 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { ChevronDown, Check } from 'lucide-react'
+import React from 'react'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from '@/components/ui/select'
+import { cn } from 'cn'
 
 export interface SelectOption {
   value: string | number
@@ -20,6 +28,7 @@ interface CustomSelectProps {
   className?: string
   align?: 'left' | 'right'
   minPopoverWidth?: string
+  disabled?: boolean
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -27,157 +36,100 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   value,
   onChange,
-  placeholder = 'Select option...',
-  colorTheme = 'blue',
+  placeholder = 'Pilih opsi...',
   size = 'md',
   className = '',
   align = 'left',
   minPopoverWidth,
+  disabled = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  const selectedOption = options.find((opt) => String(opt.value) === String(value))
-
-  const themeBorderFocus =
-    colorTheme === 'blue' || colorTheme === 'teal'
-      ? 'border-[#00799e] ring-1 ring-[#00799e]'
-      : colorTheme === 'emerald'
-      ? 'border-emerald-500 ring-1 ring-emerald-500'
-      : colorTheme === 'magenta'
-      ? 'border-pink-600 ring-1 ring-pink-600'
-      : 'border-slate-800 ring-1 ring-slate-800'
-
-  const themeOptionHover =
-    colorTheme === 'blue' || colorTheme === 'teal'
-      ? 'hover:bg-[#00799e]/10 text-slate-900 hover:text-[#00799e]'
-      : colorTheme === 'emerald'
-      ? 'hover:bg-emerald-50 text-slate-900 hover:text-emerald-700'
-      : colorTheme === 'magenta'
-      ? 'hover:bg-pink-50 text-slate-900 hover:text-pink-600'
-      : 'hover:bg-slate-100 text-slate-900'
-
-  const themeActiveBg =
-    colorTheme === 'blue' || colorTheme === 'teal'
-      ? 'bg-[#00799e] text-white font-semibold'
-      : colorTheme === 'emerald'
-      ? 'bg-emerald-600 text-white font-semibold'
-      : colorTheme === 'magenta'
-      ? 'bg-pink-600 text-white font-semibold'
-      : 'bg-slate-900 text-white font-semibold'
+  const stringValue = value !== undefined && value !== null ? String(value) : ''
+  const selectedOption = options.find((opt) => String(opt.value) === stringValue)
 
   const sizeClasses =
     size === 'sm'
-      ? 'px-2.5 py-1.5 text-xs rounded-xl'
+      ? 'h-8 text-xs py-1 px-2.5 rounded-xl'
       : size === 'lg'
-      ? 'px-4 py-2.5 text-sm rounded-xl'
-      : 'px-3 py-2 text-xs rounded-xl'
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen])
+      ? 'h-11 text-sm py-2 px-3.5 rounded-xl'
+      : 'h-9 text-xs py-1.5 px-3 rounded-xl'
 
   return (
-    <div className={`relative select-none ${className}`} ref={dropdownRef}>
+    <div className={cn("select-none flex flex-col gap-1 w-full", className)}>
       {label && (
-        <label className="block font-semibold text-xs text-slate-700 mb-1">
+        <label className="font-semibold text-xs text-slate-700">
           {label}
         </label>
       )}
 
-      {/* Select Trigger Button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full bg-white border font-medium text-slate-800 flex items-center justify-between gap-2 transition-all cursor-pointer shadow-2xs ${sizeClasses} ${
-          isOpen
-            ? `bg-white ${themeBorderFocus} shadow-xs`
-            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-        }`}
+      <Select
+        value={stringValue}
+        onValueChange={(val) => {
+          const original = options.find((opt) => String(opt.value) === val)
+          onChange(original ? original.value : val)
+        }}
+        disabled={disabled}
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
-          {selectedOption?.icon && (
-            <span className="shrink-0">{selectedOption.icon}</span>
+        <SelectTrigger
+          className={cn(
+            "w-full bg-white border border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50 focus-visible:border-[#00799e] focus-visible:ring-1 focus-visible:ring-[#00799e] shadow-2xs font-medium cursor-pointer transition-colors",
+            sizeClasses
           )}
-          <span className="truncate font-semibold">
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
-          {selectedOption?.sublabel && (
-            <span className="text-[10px] text-slate-400 font-normal shrink-0 hidden sm:inline">
-              · {selectedOption.sublabel}
-            </span>
-          )}
-          {selectedOption?.badge && (
-            <span className="shrink-0">{selectedOption.badge}</span>
-          )}
-        </div>
-
-        <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-1 ${
-            isOpen ? 'rotate-180 text-[#00799e]' : ''
-          }`}
-        />
-      </button>
-
-      {/* Dropdown Options Popover */}
-      {isOpen && (
-        <div
-          className={`absolute z-50 top-[calc(100%+4px)] bg-white border border-slate-200/90 rounded-2xl shadow-xl overflow-hidden animate-fade-in p-1 max-h-60 overflow-y-auto ${
-            align === 'right' ? 'right-0' : 'left-0'
-          } ${minPopoverWidth ? minPopoverWidth : 'min-w-[190px] w-full'}`}
-          style={{ minWidth: minPopoverWidth }}
         >
-          {options.map((opt) => {
-            const isSelected = String(opt.value) === String(value)
+          <SelectValue placeholder={placeholder}>
+            {selectedOption && (
+              <div className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                {selectedOption.icon && <span className="shrink-0">{selectedOption.icon}</span>}
+                <span className="truncate font-semibold">{selectedOption.label}</span>
+                {selectedOption.sublabel && (
+                  <span className="text-[10px] text-slate-400 font-normal shrink-0 hidden sm:inline">
+                    · {selectedOption.sublabel}
+                  </span>
+                )}
+                {selectedOption.badge && <span className="shrink-0">{selectedOption.badge}</span>}
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
 
-            return (
-              <button
-                key={String(opt.value)}
-                type="button"
-                onClick={() => {
-                  onChange(opt.value)
-                  setIsOpen(false)
-                }}
-                className={`w-full px-3 py-2 rounded-xl text-left text-xs flex items-center justify-between transition-colors cursor-pointer mb-0.5 last:mb-0 ${
-                  isSelected ? themeActiveBg : themeOptionHover
-                }`}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-semibold">{opt.label}</span>
-                    {opt.sublabel && (
-                      <span
-                        className={`text-[10px] truncate ${
-                          isSelected ? 'text-white/80' : 'text-slate-400'
-                        }`}
-                      >
-                        {opt.sublabel}
-                      </span>
+        <SelectContent
+          position="popper"
+          align={align === 'right' ? 'end' : 'start'}
+          className={cn(
+            "bg-white border-slate-200 rounded-2xl shadow-xl p-1 z-50 max-h-64 overflow-y-auto",
+            minPopoverWidth ? undefined : "min-w-[190px] w-full"
+          )}
+          style={minPopoverWidth ? { minWidth: minPopoverWidth } : undefined}
+        >
+          <SelectGroup>
+            {options.map((opt) => {
+              const optVal = String(opt.value)
+
+              return (
+                <SelectItem
+                  key={optVal}
+                  value={optVal}
+                  className="rounded-xl py-2 px-2.5 text-xs cursor-pointer hover:bg-slate-100 focus:bg-[#00799e]/10 focus:text-[#00799e] transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {opt.icon && <span className="shrink-0">{opt.icon}</span>}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="truncate font-semibold text-slate-900">{opt.label}</span>
+                      {opt.sublabel && (
+                        <span className="text-[10px] text-slate-400 truncate">
+                          {opt.sublabel}
+                        </span>
+                      )}
+                    </div>
+                    {opt.badge && (
+                      <span className="shrink-0 ml-1">{opt.badge}</span>
                     )}
                   </div>
-                  {opt.badge && !isSelected && (
-                    <span className="shrink-0">{opt.badge}</span>
-                  )}
-                </div>
-
-                {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-2" />}
-              </button>
-            )
-          })}
-        </div>
-      )}
+                </SelectItem>
+              )
+            })}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
   )
 }

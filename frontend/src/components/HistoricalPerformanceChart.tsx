@@ -1,6 +1,15 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import type { AreaRoom } from '../types/pump'
-import { CustomSelect, type SelectOption } from './CustomSelect'
+import { api } from '../services/api'
+import type { SelectOption } from './CustomSelect'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from '@/components/ui/select'
 import {
   Droplets,
   Gauge,
@@ -180,8 +189,47 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
     setCustomEndDate(end.toISOString().split('T')[0])
   }
 
-  // Generate Multi-Metric Historical Dataset
+  // Backend Live Historical Telemetry State
+  const [serverPoints, setServerPoints] = useState<any[] | null>(null)
+  const [serverSummary, setServerSummary] = useState<Record<string, any> | null>(null)
+  const [isApiLoading, setIsApiLoading] = useState(false)
+
+  // Fetch telemetry from dedicated Backend API
+  useEffect(() => {
+    let active = true
+    setIsApiLoading(true)
+
+    api.dashboard
+      .getHistoricalTelemetry({
+        area_id: selectedStationFilter,
+        timeframe: timeFrame,
+        from: timeFrame === 'custom' ? customStartDate : undefined,
+        to: timeFrame === 'custom' ? customEndDate : undefined,
+      })
+      .then((res) => {
+        if (active && res.success && res.data?.points?.length) {
+          setServerPoints(res.data.points)
+          setServerSummary(res.data.summary)
+        }
+      })
+      .catch(() => {
+        // Fallback to local synthesis gracefully if backend is unreachable
+      })
+      .finally(() => {
+        if (active) setIsApiLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [selectedStationFilter, timeFrame, customStartDate, customEndDate])
+
+  // Multi-Metric Historical Dataset
   const chartData = useMemo(() => {
+    if (serverPoints && serverPoints.length > 0) {
+      return serverPoints
+    }
+
     const stationFactor =
       selectedStationFilter === 'ALL'
         ? 2.8
@@ -283,7 +331,7 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
 
       return points
     }
-  }, [timeFrame, selectedStationFilter, currentRoom, customStartDate, customEndDate])
+  }, [serverPoints, timeFrame, selectedStationFilter, currentRoom, customStartDate, customEndDate])
 
   // Summary statistics for currently active metrics
   const activeMetricsStats = useMemo(() => {
@@ -305,14 +353,14 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
       return {
         key,
         cfg,
-        min: min.toFixed(key === 'pressure' ? 2 : 1),
-        max: max.toFixed(key === 'pressure' ? 2 : 1),
-        avg: avg.toFixed(key === 'pressure' ? 2 : 1),
+        min: serverSummary?.[key]?.min !== undefined ? Number(serverSummary[key].min).toFixed(key === 'pressure' ? 2 : 1) : min.toFixed(key === 'pressure' ? 2 : 1),
+        max: serverSummary?.[key]?.max !== undefined ? Number(serverSummary[key].max).toFixed(key === 'pressure' ? 2 : 1) : max.toFixed(key === 'pressure' ? 2 : 1),
+        avg: serverSummary?.[key]?.avg !== undefined ? Number(serverSummary[key].avg).toFixed(key === 'pressure' ? 2 : 1) : avg.toFixed(key === 'pressure' ? 2 : 1),
         change: `${isPos ? '+' : ''}${diffPct}%`,
         isPos,
       }
     })
-  }, [activeMetrics, chartData])
+  }, [activeMetrics, chartData, serverSummary])
 
   // Check which Y-axes are needed
   const hasLeftAxis = activeMetrics.some((m) => METRICS_CONFIG[m].yAxisId === 'left')
@@ -323,9 +371,14 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
       {/* 1. Header Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="font-heading font-semibold text-base sm:text-lg text-slate-900 m-0">
-            Riwayat &amp; Tren Performa Historis
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading font-semibold text-base sm:text-lg text-slate-900 m-0">
+              Riwayat &amp; Tren Performa Historis
+            </h3>
+            {isApiLoading && (
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00799e] animate-ping" title="Sinkronisasi data API..." />
+            )}
+          </div>
           <p className="text-xs text-slate-500 m-0 mt-0.5 font-normal">
             Analisis korelasi simultan debit hidrolik, tekanan pipa manifold, dan beban energi
           </p>
@@ -333,15 +386,24 @@ export const HistoricalPerformanceChart: React.FC<HistoricalPerformanceChartProp
 
         {/* Station Filter + Timeframe Selector */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Station Filter Dropdown */}
-          <CustomSelect
-            options={stationOptions}
-            value={selectedStationFilter}
-            onChange={(val) => setSelectedStationFilter(val)}
-            size="sm"
-            className="w-48"
-            minPopoverWidth="220px"
-          />
+          {/* Station Filter Dropdown with shadcn Select */}
+          <Select value={selectedStationFilter} onValueChange={setSelectedStationFilter}>
+            <SelectTrigger className="h-8 w-48 text-xs font-medium rounded-xl bg-white border-slate-200 text-slate-800 hover:border-slate-300 shadow-2xs">
+              <SelectValue placeholder="Pilih Stasiun" />
+            </SelectTrigger>
+            <SelectContent position="popper" align="start" className="bg-white border-slate-200 rounded-xl shadow-lg z-50">
+              <SelectGroup>
+                {stationOptions.map((opt) => (
+                  <SelectItem key={String(opt.value)} value={String(opt.value)} className="text-xs py-1.5 cursor-pointer">
+                    <span className="font-semibold">{opt.label}</span>
+                    {opt.sublabel && (
+                      <span className="text-[10px] text-slate-400 ml-1.5">({opt.sublabel})</span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
           {/* Timeframe Buttons */}
           <div className="flex items-center bg-slate-100 p-0.5 rounded-xl text-xs font-medium">

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
-import type { AreaRoom } from '../types/pump'
+import React, { useState, useEffect, useMemo } from 'react'
+import type { AreaRoom, PumpAsset } from '../types/pump'
 import {
   Gauge,
   Droplets,
@@ -8,35 +8,60 @@ import {
   Layers,
   Building2,
   Fan,
-  ArrowRight,
   Thermometer,
   Plus,
-  Activity,
-  ChevronDown,
   Search,
-  Check,
+  Radio,
+  LayoutGrid,
+  List,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { PumpPerformanceCharts } from './PumpPerformanceCharts'
 import { HistoricalPerformanceChart } from './HistoricalPerformanceChart'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+} from '@/components/ui/select'
 import { cn } from 'cn'
 
 interface DashboardMonitoringViewProps {
   rooms: AreaRoom[]
   onToggleMotor: (pumpId: string) => void
   onOpenAddPump?: () => void
+  lastUpdated?: string
+  isBackendOnline?: boolean
+}
+
+interface EnrichedPump extends PumpAsset {
+  roomId: string
+  roomName: string
+  roomCode: string
 }
 
 export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = ({
   rooms,
   onToggleMotor,
   onOpenAddPump,
+  lastUpdated,
+  isBackendOnline = true,
 }) => {
+  // Fleet View Controls
+  const [fleetStatusFilter, setFleetStatusFilter] = useState<'ALL' | 'RUNNING' | 'STOPPED' | 'FAULT'>('ALL')
+  const [fleetLocationFilter, setFleetLocationFilter] = useState<string>('ALL')
+  const [fleetSearchQuery, setFleetSearchQuery] = useState('')
+  const [fleetViewMode, setFleetViewMode] = useState<'grid' | 'table'>('grid')
+
+  // Station Detail Schematic Controls (Default true so tank visualization is readily accessible)
+  const [showStationSchematic, setShowStationSchematic] = useState(true)
   const [selectedRoomId, setSelectedRoomId] = useState<string>(rooms[0]?.id || '')
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [stationSearch, setStationSearch] = useState('')
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Keep selectedRoomId valid if rooms change
   useEffect(() => {
@@ -45,21 +70,37 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
     }
   }, [rooms, selectedRoomId])
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsDropdownOpen(false)
-      }
-    }
-    if (isDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isDropdownOpen])
+  // All pumps across all rooms (Flattened Fleet data)
+  const allEnrichedPumps = useMemo<EnrichedPump[]>(() => {
+    return rooms.flatMap((r) =>
+      r.pumps.map((p) => ({
+        ...p,
+        roomId: r.id,
+        roomName: r.name,
+        roomCode: r.code,
+      }))
+    )
+  }, [rooms])
 
+  // Filtered pumps based on status, location, and search
+  const filteredPumps = useMemo(() => {
+    return allEnrichedPumps.filter((pump) => {
+      if (fleetStatusFilter !== 'ALL' && pump.status !== fleetStatusFilter) return false
+      if (fleetLocationFilter !== 'ALL' && pump.roomId !== fleetLocationFilter) return false
+      if (fleetSearchQuery.trim()) {
+        const query = fleetSearchQuery.toLowerCase()
+        return (
+          pump.code.toLowerCase().includes(query) ||
+          pump.name.toLowerCase().includes(query) ||
+          pump.roomName.toLowerCase().includes(query) ||
+          pump.roomCode.toLowerCase().includes(query)
+        )
+      }
+      return true
+    })
+  }, [allEnrichedPumps, fleetStatusFilter, fleetLocationFilter, fleetSearchQuery])
+
+  // Station Schematic Active Room
   const activeRoomIndex = rooms.findIndex((r) => r.id === selectedRoomId)
   const currentRoom: AreaRoom | undefined =
     activeRoomIndex !== -1 ? rooms[activeRoomIndex] : rooms[0]
@@ -76,64 +117,75 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
       : true
   )
 
-  // Global KPI Calculations
-  const allPumps = rooms.flatMap((r) => r.pumps)
-  const totalPumps = allPumps.length
-  const runningPumps = allPumps.filter((p) => p.status === 'RUNNING').length
+  // Calculations for Overview Cards
+  const totalPumps = allEnrichedPumps.length
+  const runningPumps = allEnrichedPumps.filter((p) => p.status === 'RUNNING').length
+  const stoppedPumps = allEnrichedPumps.filter((p) => p.status === 'STOPPED').length
+  const faultPumps = allEnrichedPumps.filter((p) => p.status === 'FAULT').length
+
   const totalFlowRate = rooms.reduce((acc, r) => acc + r.flowRate, 0)
   const avgPressure =
     rooms.length > 0 ? (rooms.reduce((acc, r) => acc + r.pressure, 0) / rooms.length).toFixed(2) : '0.00'
-  const totalPower = allPumps
+  const avgFlowRate =
+    rooms.length > 0 ? (totalFlowRate / rooms.length).toFixed(1) : '0.0'
+  const totalPower = allEnrichedPumps
     .reduce((acc, p) => acc + (p.status === 'RUNNING' ? p.metrics?.power_kw || 18.5 : 0), 0)
     .toFixed(1)
 
+  const displayLastUpdated = lastUpdated || 'Terhubung'
+
   return (
     <div className="space-y-6 animate-fade-in select-none">
-      {/* 1. Top 4 Live Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* Metric 1: Pumps Running */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between h-full">
+      {/* ========================================================================= */}
+      {/* 1. TOP OVERVIEW CARDS                                                     */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {/* Card 1: Lokasi Terpantau */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-              PUMPS RUNNING
+              LOKASI TERPANTAU
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Fan className={`w-4 h-4 ${runningPumps > 0 ? 'animate-spin [animation-duration:1.2s]' : ''}`} />
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-slate-700" />
             </div>
           </div>
 
-          <div className="my-2">
-            <div className="flex items-baseline gap-1.5">
+          <div className="my-2.5">
+            <div className="flex items-baseline gap-2">
               <span className="font-mono text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">
-                {runningPumps}
+                {rooms.length}
               </span>
-              <span className="font-mono text-xs text-slate-400 font-semibold">
-                / {totalPumps} UNITS
+              <span className="font-mono text-xs text-slate-500 font-semibold uppercase">
+                Stasiun
               </span>
             </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              {totalPumps} Pompa Terpasang
+            </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-emerald-600 font-medium flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {totalPumps > 0 ? `${Math.round((runningPumps / totalPumps) * 100)}% Running` : 'Standby'}
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-700 font-medium flex items-center gap-1.5 font-mono text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Semua Stasiun Terhubung
             </span>
-            <span className="text-slate-400 font-mono text-[10px]">Duty / Standby</span>
+            <span className="text-slate-400 font-mono text-[10px]">SCADA Grid</span>
           </div>
         </div>
 
-        {/* Metric 2: Average Pressure */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between h-full">
+        {/* Card 2: Rata-Rata Tekanan */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-              DISCHARGE PRESSURE
+              RATA-RATA TEKANAN
             </span>
-            <div className="w-8 h-8 rounded-lg bg-[#00799e]/10 text-[#00799e] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-cyan-50 text-[#00799e] flex items-center justify-center">
               <Gauge className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="my-2">
+          <div className="my-2.5">
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">
                 {avgPressure}
@@ -142,29 +194,31 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                 bar
               </span>
             </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              Rentang Kerja: 2.0 – 6.0 bar
+            </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-[#00799e] font-medium flex items-center gap-1">
-              <Activity className="w-3 h-3" />
-              Range 2.0 – 6.0
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-700 font-medium font-mono text-[11px]">
+              Manifold Discharge Aktif
             </span>
-            <span className="text-slate-400 font-mono text-[10px]">Transmitter Active</span>
+            <span className="text-slate-400 font-mono text-[10px]">Transmitter</span>
           </div>
         </div>
 
-        {/* Metric 3: Total Flow Rate */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between h-full">
+        {/* Card 3: Total Debit Air */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-              TOTAL FLOW RATE
+              TOTAL DEBIT AIR
             </span>
             <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
               <Droplets className="w-4 h-4" />
             </div>
           </div>
 
-          <div className="my-2">
+          <div className="my-2.5">
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">
                 {totalFlowRate.toFixed(1)}
@@ -173,200 +227,634 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                 m³/h
               </span>
             </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              Rata-rata: {avgFlowRate} m³/h / stasiun
+            </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-sky-700 font-medium truncate">
-              Main Distribution
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-700 font-medium font-mono text-[11px] truncate">
+              Distribusi Utama Aktif
             </span>
             <span className="text-slate-400 font-mono text-[10px]">Mag Flow</span>
           </div>
         </div>
 
-        {/* Metric 4: Power Consumption */}
-        <div className="bg-white rounded-2xl p-5 shadow-xs flex flex-col justify-between h-full">
+        {/* Card 4: Pembaruan Terakhir dengan Icon Live Ticker Saja */}
+        <div className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col justify-between h-full">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider font-mono">
-              TOTAL POWER LOAD
+              PEMBARUAN TERAKHIR
             </span>
-            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Zap className="w-4 h-4" />
+            {/* Live Ticker Icon Badge (Hanya icon live saja, rapi & profesional) */}
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/70 text-[10px] font-mono font-bold">
+              <Radio className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+              <span>LIVE</span>
             </div>
           </div>
 
-          <div className="my-2">
+          <div className="my-2.5">
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight tabular-nums">
-                {totalPower}
-              </span>
-              <span className="font-mono text-xs text-slate-500 font-semibold uppercase">
-                kW
+                {displayLastUpdated}
               </span>
             </div>
+            <p className="text-[11px] text-slate-500 font-mono mt-1">
+              {runningPumps}/{totalPumps} Pompa Aktif • {totalPower} kW Beban
+            </p>
           </div>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-            <span className="text-amber-700 font-medium">
-              3-Phase 380V Load
+          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-700 font-medium flex items-center gap-1.5 font-mono text-[11px]">
+              <span className={cn("w-2 h-2 rounded-full", isBackendOnline ? "bg-emerald-500" : "bg-amber-500")} />
+              {isBackendOnline ? 'Gateway Sinkron' : 'Mode Offline'}
             </span>
-            <span className="text-slate-400 font-mono text-[10px]">50.0 Hz</span>
+            <span className="text-slate-400 font-mono text-[10px]">SCADA RTU</span>
           </div>
         </div>
       </div>
 
-      {/* 3. Station Schematic & Real-Time Visualization Module */}
-      {currentRoom ? (
-        <div className="bg-white rounded-2xl p-5 sm:p-7 shadow-xs">
-            {/* Control Bar: Station Popout Selector + Realtime Readouts */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-5 border-b border-slate-200 mb-6">
-              {/* Station Identity & Popout Selector */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
-                  <Building2 className="w-5 h-5 text-sky-400" />
-                </div>
-                <div>
-                  <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 m-0 tracking-tight">
-                    {currentRoom.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 m-0 font-normal">
-                    {hasTank
-                      ? 'Piping Schematic, Reservoir Tank & Motor Controls'
-                      : 'In-Line Booster Manifold, Discharge Telemetry & Motor Controls'}
-                  </p>
-                </div>
+      {/* ========================================================================= */}
+      {/* 2. CARD PEMANTAUAN SELURUH POMPA (HEADER TER-JUSTIFY RAPI KIRI & KANAN)   */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/80">
+        {/* Header & Controls Toolbar: Justify-Between Kiri & Kanan Sepenuhnya */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80 mb-5 w-full">
+          {/* Sisi Kiri: Judul, Subtitle, & Badge Total Unit */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs shrink-0">
+              <Layers className="w-5 h-5 text-sky-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-heading font-extrabold text-base sm:text-lg text-slate-900 m-0 tracking-tight">
+                  Pemantauan Seluruh Pompa
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  {totalPumps} Unit di {rooms.length} Stasiun
+                </span>
               </div>
+              <p className="text-xs text-slate-500 m-0 font-normal mt-0.5">
+                Status operasional dan telemetri seluruh unit pompa lintas stasiun secara serentak
+              </p>
+            </div>
+          </div>
 
-              {/* Station Selection Popout & Telemetry Pills */}
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Professional Station Popout Selector */}
-                <div className="relative" ref={dropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setIsDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/90 hover:border-slate-300 hover:bg-slate-100/80 text-slate-800 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
-                  >
-                    <Building2 className="w-3.5 h-3.5 text-[#00799e]" />
-                    <span className="truncate max-w-[160px] sm:max-w-[200px]">
-                      {currentRoom.name}
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400 font-normal">
-                      ({currentRoom.pumps.length} pumps)
-                    </span>
-                    <ChevronDown
-                      className={cn(
-                        "w-3.5 h-3.5 text-slate-400 transition-transform duration-200",
-                        isDropdownOpen && "rotate-180 text-[#00799e]"
-                      )}
-                    />
-                  </button>
+          {/* Sisi Kanan: Action Toolbar terdorong rapi ke kanan */}
+          <div className="flex flex-wrap items-center gap-2.5 md:justify-end">
+            {/* Status Filter Badges */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/70 text-xs">
+              <button
+                type="button"
+                onClick={() => setFleetStatusFilter('ALL')}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-all cursor-pointer",
+                  fleetStatusFilter === 'ALL'
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                Semua ({totalPumps})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFleetStatusFilter('RUNNING')}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                  fleetStatusFilter === 'RUNNING'
+                    ? "bg-white text-emerald-800 shadow-2xs"
+                    : "text-slate-600 hover:text-emerald-800"
+                )}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Aktif ({runningPumps})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFleetStatusFilter('STOPPED')}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                  fleetStatusFilter === 'STOPPED'
+                    ? "bg-white text-slate-800 shadow-2xs"
+                    : "text-slate-600 hover:text-slate-900"
+                )}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                Standby ({stoppedPumps})
+              </button>
+              {faultPumps > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFleetStatusFilter('FAULT')}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5",
+                    fleetStatusFilter === 'FAULT'
+                      ? "bg-rose-50 text-rose-800 shadow-2xs"
+                      : "text-rose-600 hover:text-rose-800"
+                  )}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  Gangguan ({faultPumps})
+                </button>
+              )}
+            </div>
 
-                  {/* Popout Menu */}
-                  {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-fade-in p-1.5">
-                      <div className="p-2 border-b border-slate-100">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                          Select Plant Station ({rooms.length})
+            {/* Location Filter Dropdown with shadcn Select */}
+            <Select value={fleetLocationFilter} onValueChange={setFleetLocationFilter}>
+              <SelectTrigger className="h-8 min-w-[170px] sm:min-w-[195px] text-xs font-medium rounded-xl bg-slate-50 border-slate-200 text-slate-800 hover:border-slate-300 shadow-2xs">
+                <SelectValue placeholder="Pilih Stasiun" />
+              </SelectTrigger>
+              <SelectContent position="popper" align="start" className="bg-white border-slate-200 rounded-xl shadow-lg z-50">
+                <SelectGroup>
+                  <SelectItem value="ALL" className="text-xs py-1.5 cursor-pointer">
+                    Semua Stasiun ({rooms.length})
+                  </SelectItem>
+                  {rooms.map((r) => (
+                    <SelectItem key={r.id} value={r.id} className="text-xs py-1.5 cursor-pointer">
+                      <span className="font-mono text-slate-500 mr-1.5">{r.code}</span>
+                      <span>{r.name}</span>
+                      <span className="text-[10px] font-mono text-slate-400 ml-1">({r.pumps.length})</span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            {/* Quick Search */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Cari kode/nama..."
+                value={fleetSearchQuery}
+                onChange={(e) => setFleetSearchQuery(e.target.value)}
+                className="w-36 sm:w-44 pl-8 pr-2.5 py-1.5 text-xs rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00799e]"
+              />
+            </div>
+
+            {/* Grid / Table View Mode Switcher */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => setFleetViewMode('grid')}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                  fleetViewMode === 'grid'
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+                title="Tampilan Grid Padat"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setFleetViewMode('table')}
+                className={cn(
+                  "p-1.5 rounded-lg transition-all cursor-pointer",
+                  fleetViewMode === 'table'
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+                title="Tampilan Tabel SCADA"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Fleet Pumps Display */}
+        {filteredPumps.length === 0 ? (
+          <div className="bg-slate-50/70 border border-dashed border-slate-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center">
+            <Layers className="w-8 h-8 text-slate-400 mb-2" />
+            <p className="text-sm font-semibold text-slate-700">Tidak ada unit pompa yang cocok</p>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Sesuaikan kata kunci pencarian atau filter lokasi stasiun.
+            </p>
+            {(fleetStatusFilter !== 'ALL' || fleetLocationFilter !== 'ALL' || fleetSearchQuery) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setFleetStatusFilter('ALL')
+                  setFleetLocationFilter('ALL')
+                  setFleetSearchQuery('')
+                }}
+                className="mt-3 px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold cursor-pointer transition-all"
+              >
+                Reset Filter
+              </button>
+            )}
+          </div>
+        ) : fleetViewMode === 'grid' ? (
+          /* ========================================================= */
+          /* GRID VIEW: Visual Turbin Berputar yang Jelas & Terlihat   */
+          /* ========================================================= */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+            {filteredPumps.map((pump) => {
+              const isRunning = pump.status === 'RUNNING'
+              const isFault = pump.status === 'FAULT'
+
+              return (
+                <div
+                  key={pump.id}
+                  className={cn(
+                    "rounded-2xl p-4 transition-colors flex flex-col justify-between relative bg-white border shadow-2xs",
+                    isRunning
+                      ? "border-emerald-300/80 bg-gradient-to-b from-emerald-50/[0.15] to-white ring-1 ring-emerald-500/20"
+                      : isFault
+                      ? "border-rose-300/80 bg-rose-50/[0.12] ring-1 ring-rose-500/20"
+                      : "border-slate-200/90"
+                  )}
+                >
+                  <div>
+                    {/* Header Row: Location Tag, Pump Code, Status Badge */}
+                    <div className="flex items-center justify-between gap-1.5 mb-2.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white shrink-0">
+                          {pump.code}
                         </span>
-                        {rooms.length > 3 && (
-                          <div className="relative">
-                            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            <input
-                              type="text"
-                              placeholder="Search station..."
-                              value={stationSearch}
-                              onChange={(e) => setStationSearch(e.target.value)}
-                              className="w-full pl-8 pr-3 py-1 text-xs rounded-lg bg-slate-50 border border-slate-200 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#00799e]"
-                              autoFocus
-                            />
-                          </div>
-                        )}
+                        <span
+                          className="text-[10px] font-mono text-slate-600 font-semibold truncate bg-slate-100 px-1.5 py-0.5 rounded"
+                          title={pump.roomName}
+                        >
+                          {pump.roomCode}
+                        </span>
                       </div>
 
-                      <div className="max-h-64 overflow-y-auto p-1 space-y-1">
-                        {rooms
-                          .filter(
-                            (r) =>
-                              r.name.toLowerCase().includes(stationSearch.toLowerCase()) ||
-                              r.code.toLowerCase().includes(stationSearch.toLowerCase())
-                          )
-                          .map((r) => {
-                            const isSelected = r.id === currentRoom.id
-                            const roomHasTank = Boolean(
-                              r.hasTank !== undefined
-                                ? r.hasTank
-                                : (r.tankLevel !== undefined &&
-                                   r.tankLevel > 0 &&
-                                   !r.name.toLowerCase().includes('booster') &&
-                                   !r.name.toLowerCase().includes('transfer') &&
-                                   !r.name.toLowerCase().includes('distribusi'))
-                            )
-                            const rRunning = r.pumps.filter((p) => p.status === 'RUNNING').length
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "font-mono font-bold text-[10px] px-2 py-0.5 border-0 inline-flex items-center gap-1.5 shrink-0",
+                          isRunning
+                            ? "bg-emerald-100 text-emerald-800"
+                            : isFault
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-slate-100 text-slate-700"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            isRunning
+                              ? "bg-emerald-600"
+                              : isFault
+                              ? "bg-rose-600"
+                              : "bg-slate-400"
+                          )}
+                        />
+                        {isRunning ? 'AKTIF' : isFault ? 'FAULT' : 'STANDBY'}
+                      </Badge>
+                    </div>
 
-                            return (
-                              <button
-                                key={r.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedRoomId(r.id)
-                                  setIsDropdownOpen(false)
-                                  setStationSearch('')
-                                }}
-                                className={cn(
-                                  "w-full px-3 py-2 rounded-xl text-left text-xs transition-all flex items-center justify-between cursor-pointer group",
-                                  isSelected
-                                    ? "bg-[#00799e]/10 text-[#00799e] font-semibold"
-                                    : "text-slate-700 hover:bg-slate-50"
-                                )}
-                              >
-                                <div className="min-w-0 pr-2">
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
-                                      {r.code}
-                                    </span>
-                                    <span className="truncate">{r.name}</span>
-                                  </div>
-                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
-                                    <span>{r.pumps.length} Pumps ({rRunning} Active)</span>
-                                    <span>•</span>
-                                    <span>{roomHasTank ? 'Storage Tank' : 'Direct Booster'}</span>
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <Check className="w-4 h-4 text-[#00799e] shrink-0" />
-                                )}
-                              </button>
-                            )
-                          })}
+                    {/* Pump Name & Location Name */}
+                    <div className="mb-2.5">
+                      <h4
+                        className="font-heading font-bold text-sm text-slate-900 truncate m-0"
+                        title={pump.name}
+                      >
+                        {pump.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 font-normal truncate m-0 mt-0.5">
+                        {pump.roomName}
+                      </p>
+                    </div>
+
+                    {/* Visual Animasi Turbin: Memudahkan Inspeksi Seketika */}
+                    <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/70 mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                            isRunning
+                              ? "bg-[#00799e] text-white shadow-xs shadow-[#00799e]/20"
+                              : "bg-slate-200 text-slate-400"
+                          )}
+                        >
+                          <Fan
+                            className={cn(
+                              "w-4 h-4",
+                              isRunning ? "animate-spin [animation-duration:1.1s]" : ""
+                            )}
+                          />
+                        </div>
+
+                        <div>
+                          <span className="block text-[9px] text-slate-400 uppercase font-mono font-bold leading-none">
+                            Putaran Motor
+                          </span>
+                          <span className="font-mono font-bold text-xs text-slate-900 block mt-0.5">
+                            {isRunning ? '1,450 RPM' : '0 RPM'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <span className="text-[10px] font-mono text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200/80">
+                        {isRunning ? '50.0 Hz' : '0.0 Hz'}
+                      </span>
+                    </div>
+
+                    {/* 4 Telemetry Metrics Grid (Tekanan, Debit, Daya, Suhu) */}
+                    <div className="grid grid-cols-2 gap-1.5 text-xs mb-3 font-mono">
+                      {/* Pressure */}
+                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                        <Gauge className="w-3.5 h-3.5 text-[#00799e] shrink-0" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] text-slate-400 font-sans leading-none">
+                            Tekanan
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
+                            {pump.metrics?.pressure_bar ? pump.metrics.pressure_bar.toFixed(2) : '0.00'} <span className="text-[9px] font-normal text-slate-500">bar</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Flow Rate */}
+                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                        <Droplets className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] text-slate-400 font-sans leading-none">
+                            Debit
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
+                            {pump.metrics?.flow_m3h ? pump.metrics.flow_m3h.toFixed(1) : '0.0'} <span className="text-[9px] font-normal text-slate-500">m³/h</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Power */}
+                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                        <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] text-slate-400 font-sans leading-none">
+                            Daya
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
+                            {pump.metrics?.power_kw ? pump.metrics.power_kw.toFixed(1) : '0.0'} <span className="text-[9px] font-normal text-slate-500">kW</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Temperature */}
+                      <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                        <Thermometer className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] text-slate-400 font-sans leading-none">
+                            Suhu
+                          </span>
+                          <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
+                            {pump.metrics?.motor_temp_c ? pump.metrics.motor_temp_c.toFixed(1) : '25.0'} <span className="text-[9px] font-normal text-slate-500">°C</span>
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Header Live Telemetry Badges */}
-                <div className="px-3 py-1.5 rounded-xl bg-slate-50 flex items-center gap-2 text-xs font-mono">
-                  <Gauge className="w-3.5 h-3.5 text-[#00799e]" />
-                  <span className="text-slate-500">P:</span>
-                  <strong className="text-slate-900">{currentRoom.pressure.toFixed(2)} bar</strong>
-                </div>
+                  {/* Motor Control Switch with Clear Label */}
+                  <div className="pt-2.5 border-t border-slate-200/80 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 font-mono">
+                      <Power
+                        className={cn(
+                          "w-3.5 h-3.5",
+                          isRunning ? "text-emerald-600" : "text-slate-400"
+                        )}
+                      />
+                      KONTROL MOTOR
+                    </span>
 
-                <div className="px-3 py-1.5 rounded-xl bg-slate-50 flex items-center gap-2 text-xs font-mono">
-                  <Droplets className="w-3.5 h-3.5 text-sky-600" />
-                  <span className="text-slate-500">Q:</span>
-                  <strong className="text-slate-900">{currentRoom.flowRate.toFixed(1)} m³/h</strong>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "text-[10px] font-mono font-bold",
+                          isRunning ? "text-emerald-700" : "text-slate-400"
+                        )}
+                      >
+                        {isRunning ? "ON" : "OFF"}
+                      </span>
+                      <Switch
+                        checked={isRunning}
+                        onCheckedChange={() => onToggleMotor(pump.id)}
+                        aria-label={`Sakelar motor ${pump.name}`}
+                      />
+                    </div>
+                  </div>
                 </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* ========================================================= */
+          /* TABLE VIEW: Padat, High-Density SCADA Fleet List          */
+          /* ========================================================= */
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-2.5 px-3">Kode Pompa</th>
+                  <th className="py-2.5 px-3">Nama Pompa</th>
+                  <th className="py-2.5 px-3">Lokasi / Stasiun</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Tekanan</th>
+                  <th className="py-2.5 px-3">Debit Air</th>
+                  <th className="py-2.5 px-3">Daya Listrik</th>
+                  <th className="py-2.5 px-3">Suhu Motor</th>
+                  <th className="py-2.5 px-3 text-right">Kontrol</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {filteredPumps.map((pump) => {
+                  const isRunning = pump.status === 'RUNNING'
+                  const isFault = pump.status === 'FAULT'
+
+                  return (
+                    <tr
+                      key={pump.id}
+                      className={cn(
+                        "hover:bg-slate-50 transition-colors",
+                        isRunning && "bg-emerald-50/[0.15]"
+                      )}
+                    >
+                      <td className="py-2.5 px-3 font-bold text-slate-900">
+                        <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono text-[10px]">
+                          {pump.code}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-800 font-sans">
+                        {pump.name}
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600 font-sans text-xs">
+                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 bg-slate-100 rounded text-slate-700 mr-1.5">
+                          {pump.roomCode}
+                        </span>
+                        {pump.roomName}
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "font-mono font-bold text-[10px] px-2 py-0.5 border-0 inline-flex items-center gap-1.5",
+                            isRunning
+                              ? "bg-emerald-100 text-emerald-800"
+                              : isFault
+                              ? "bg-rose-100 text-rose-800"
+                              : "bg-slate-100 text-slate-700"
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              isRunning
+                                ? "bg-emerald-600"
+                                : isFault
+                                ? "bg-rose-600"
+                                : "bg-slate-400"
+                            )}
+                          />
+                          {isRunning ? 'AKTIF' : isFault ? 'FAULT' : 'STANDBY'}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900">
+                        {pump.metrics?.pressure_bar ? pump.metrics.pressure_bar.toFixed(2) : '0.00'} bar
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-sky-700">
+                        {pump.metrics?.flow_m3h ? pump.metrics.flow_m3h.toFixed(1) : '0.0'} m³/h
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-amber-700">
+                        {pump.metrics?.power_kw ? pump.metrics.power_kw.toFixed(1) : '0.0'} kW
+                      </td>
+                      <td className="py-2.5 px-3 font-semibold text-rose-700">
+                        {pump.metrics?.motor_temp_c ? pump.metrics.motor_temp_c.toFixed(1) : '25.0'} °C
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <Switch
+                            checked={isRunning}
+                            onCheckedChange={() => onToggleMotor(pump.id)}
+                            aria-label={`Toggle ${pump.name}`}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. DETAIL SKEMATIK & VISUALISASI TANGKI AIR RESERVOIR                    */}
+      {/* ========================================================================= */}
+      {currentRoom && (
+        <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/80">
+          {/* Header Bar with Toggle and Station Popout Selector */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200/80">
+            {/* Station Identity */}
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-slate-700" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-heading font-extrabold text-base text-slate-900 m-0 tracking-tight">
+                    Skematik Detail Stasiun: {currentRoom.name}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowStationSchematic((prev) => !prev)}
+                    className="text-slate-500 hover:text-slate-800 text-xs flex items-center gap-1 font-mono transition-colors cursor-pointer ml-1"
+                  >
+                    {showStationSchematic ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showStationSchematic ? 'Sembunyikan' : 'Tampilkan'}</span>
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 m-0 font-normal">
+                  {hasTank
+                    ? 'Visualisasi Tangki Reservoir Ringan & Pemipaan Stasiun'
+                    : 'Manifold Booster & Telemetri Stasiun'}
+                </p>
               </div>
             </div>
 
-            {/* Schematic Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              {/* 1. RESERVOIR WATER TANK MODULE (Only rendered if station has a tank!) */}
+            {/* Station Selector Popout & Quick Telemetry Readouts */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Station Popout Selector with shadcn Select */}
+              <Select value={selectedRoomId} onValueChange={setSelectedRoomId}>
+                <SelectTrigger className="h-9 min-w-[200px] sm:min-w-[240px] rounded-xl bg-slate-50 border-slate-200 text-slate-800 text-xs font-semibold hover:bg-slate-100 shadow-2xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <Building2 className="size-3.5 text-[#00799e] shrink-0" />
+                    <span className="truncate">{currentRoom.name}</span>
+                    <span className="text-[10px] font-mono text-slate-400 font-normal">
+                      ({currentRoom.pumps.length} pompa)
+                    </span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent position="popper" align="end" className="w-[280px] sm:w-[320px] bg-white border-slate-200 rounded-2xl shadow-xl p-1 z-50 max-h-72 overflow-y-auto">
+                  <SelectGroup>
+                    <SelectLabel className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 px-2.5 py-1">
+                      Pilih Stasiun Terpantau ({rooms.length})
+                    </SelectLabel>
+                    {rooms.map((r) => {
+                      const rRunning = r.pumps.filter((p) => p.status === 'RUNNING').length
+                      const roomHasTank = Boolean(
+                        r.hasTank !== undefined
+                          ? r.hasTank
+                          : (r.tankLevel !== undefined &&
+                             r.tankLevel > 0 &&
+                             !r.name.toLowerCase().includes('booster') &&
+                             !r.name.toLowerCase().includes('transfer') &&
+                             !r.name.toLowerCase().includes('distribusi'))
+                      )
+
+                      return (
+                        <SelectItem key={r.id} value={r.id} className="text-xs rounded-xl py-2 px-2.5 cursor-pointer hover:bg-slate-100 focus:bg-[#00799e]/10 focus:text-[#00799e]">
+                          <div className="flex flex-col gap-0.5 text-left">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700">
+                                {r.code}
+                              </span>
+                              <span className="font-semibold text-slate-900">{r.name}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
+                              <span>{r.pumps.length} Pompa ({rRunning} Aktif)</span>
+                              <span>•</span>
+                              <span>{roomHasTank ? 'Tangki Air' : 'In-Line Booster'}</span>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              {/* Header Live Telemetry Badges */}
+              <div className="px-3 py-1.5 rounded-xl bg-slate-50 flex items-center gap-2 text-xs font-mono">
+                <Gauge className="w-3.5 h-3.5 text-[#00799e]" />
+                <span className="text-slate-500">P:</span>
+                <strong className="text-slate-900">{currentRoom.pressure.toFixed(2)} bar</strong>
+              </div>
+
+              <div className="px-3 py-1.5 rounded-xl bg-slate-50 flex items-center gap-2 text-xs font-mono">
+                <Droplets className="w-3.5 h-3.5 text-sky-600" />
+                <span className="text-slate-500">Q:</span>
+                <strong className="text-slate-900">{currentRoom.flowRate.toFixed(1)} m³/h</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Schematic Content Body */}
+          {showStationSchematic && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch mt-5">
+              {/* 1. RESERVOIR WATER TANK DENGAN ANIMASI AIR RINGAN (GPU-accelerated pure CSS) */}
               {hasTank && (
-                <div className="lg:col-span-4 bg-slate-50/70 rounded-2xl p-5 flex flex-col justify-between min-h-[350px]">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="lg:col-span-4 bg-slate-50/70 rounded-2xl p-5 flex flex-col justify-between min-h-[320px] border border-slate-200/60">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200/60">
                     <div className="flex items-center gap-2">
                       <Droplets className="w-4 h-4 text-[#00799e]" />
                       <span className="font-bold text-xs text-slate-900 font-mono tracking-wide">
-                        RESERVOIR TANK
+                        TANGKI RESERVOIR
                       </span>
                     </div>
                     <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-100 text-cyan-900 border border-cyan-300">
@@ -374,13 +862,11 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                     </span>
                   </div>
 
-                  {/* Animated Tank Visualizer */}
+                  {/* Level Indicator dengan Animasi Permukaan Air Ringan (GPU Composited) */}
                   <div className="my-4 flex items-center justify-center">
-                    <div className="relative w-44 h-52 rounded-2xl border-2 border-cyan-500/80 bg-white overflow-hidden shadow-inner flex flex-col justify-end">
-                      {/* Glass subtle gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-cyan-50/60 via-transparent to-cyan-50/40 pointer-events-none z-20" />
-                      <div className="absolute top-2 left-3 right-3 flex justify-between text-[10px] font-mono text-slate-500 z-20 font-bold">
-                        <span>CAP: 5,000L</span>
+                    <div className="relative w-40 h-48 rounded-xl border-2 border-cyan-600/70 bg-white overflow-hidden shadow-inner flex flex-col justify-end">
+                      <div className="absolute top-2 left-3 right-3 flex justify-between text-[10px] font-mono text-slate-600 z-20 font-bold">
+                        <span>5,000L</span>
                         <span>100%</span>
                       </div>
 
@@ -391,212 +877,162 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                         <span>— 25%</span>
                       </div>
 
-                      {/* Rising Water Bubbles */}
+                      {/* Rising Bubbles Ringan (2 Partikel Ringan CSS) */}
                       <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
-                        <div className="w-2 h-2 rounded-full bg-white/70 absolute left-8 bottom-4 animate-bubble-1" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/70 absolute left-20 bottom-2 animate-bubble-2" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-white/70 absolute left-28 bottom-6 animate-bubble-3" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/70 absolute left-8 bottom-3 animate-bubble-1" />
+                        <div className="w-2 h-2 rounded-full bg-white/70 absolute left-24 bottom-5 animate-bubble-2" />
                       </div>
 
-                      {/* Water Fill with Wave Animation */}
+                      {/* Calm Water Fill with Wave Animation Surface */}
                       <div
                         className="w-full bg-gradient-to-t from-[#005a75] via-[#00799e] to-[#38bdf8] relative transition-all duration-700 overflow-hidden"
                         style={{ height: `${currentRoom.tankLevel || 75}%` }}
                       >
-                        {/* Animated Top Wave Surface */}
-                        <div className="absolute top-0 left-0 right-0 h-4 bg-cyan-200/50 animate-water-wave rounded-full transform -translate-y-2" />
+                        {/* Pure CSS Surface Wave Animation */}
+                        <div className="absolute top-0 left-0 right-0 h-3 bg-cyan-200/50 animate-water-wave rounded-full transform -translate-y-1.5" />
                       </div>
                     </div>
                   </div>
 
                   {/* Tank Footer Info */}
-                  <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span>Sensor: <strong className="text-slate-800 font-mono">{currentRoom.sensorTag || 'LT-01'}</strong></span>
-                    <span className="text-emerald-700 font-bold font-mono text-[10px] flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Normal Level
+                  <div className="text-[11px] text-slate-500 pt-3 border-t border-slate-200 flex items-center justify-between font-mono">
+                    <span>Sensor: <strong className="text-slate-800">{currentRoom.sensorTag || 'LT-01'}</strong></span>
+                    <span className="text-emerald-700 font-bold text-[10px] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Level Normal
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* 2. PUMPS GRID (Takes full 12 cols if no tank!) */}
+              {/* 2. PUMPS GRID FOR THIS ROOM */}
               <div className={cn(
                 hasTank ? "lg:col-span-8" : "lg:col-span-12",
                 "flex flex-col justify-between gap-4"
               )}>
                 {currentRoom.pumps.length === 0 ? (
-                  <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[350px]">
-                    <div className="w-12 h-12 rounded-2xl bg-[#00799e]/10 text-[#00799e] flex items-center justify-center mb-3">
-                      <Layers className="w-6 h-6" />
-                    </div>
-                    <h4 className="font-heading font-bold text-base text-slate-900 mb-1">
-                      No Pumps Assigned to This Station
+                  <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
+                    <Layers className="w-8 h-8 text-slate-400 mb-2" />
+                    <h4 className="font-heading font-bold text-sm text-slate-900 mb-1">
+                      Belum Ada Pompa di Stasiun Ini
                     </h4>
                     <p className="text-xs text-slate-500 max-w-sm mb-4 font-normal">
-                      Configure or assign pumps to {currentRoom.name} to monitor performance.
+                      Tambahkan unit pompa ke {currentRoom.name} untuk memantau performa.
                     </p>
                     {onOpenAddPump && (
                       <button
                         onClick={onOpenAddPump}
-                        className="px-4 py-2 rounded-xl bg-[#00799e] hover:bg-[#006887] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        className="px-3.5 py-1.5 rounded-xl bg-[#00799e] hover:bg-[#006887] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add Pump</span>
+                        <span>Tambah Pompa</span>
                       </button>
                     )}
                   </div>
                 ) : (
                   <div className={cn(
-                    "grid gap-4",
+                    "grid gap-3.5",
                     hasTank
                       ? "grid-cols-1 md:grid-cols-2"
                       : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                   )}>
-                    {currentRoom.pumps.map((pump, pIdx) => {
+                    {currentRoom.pumps.map((pump) => {
                       const isRunning = pump.status === 'RUNNING'
-                      const motorIdx = (pIdx % 2) as 0 | 1
 
                       return (
                         <div
                           key={pump.id}
                           className={cn(
-                            "rounded-2xl p-5 transition-all duration-300 flex flex-col justify-between relative overflow-hidden bg-white shadow-xs",
-                            isRunning && "ring-2 ring-emerald-500/25 bg-gradient-to-b from-emerald-500/[0.03] to-white"
+                            "rounded-2xl p-4 transition-colors flex flex-col justify-between bg-white border shadow-2xs",
+                            isRunning
+                              ? "border-emerald-300/80 bg-emerald-50/[0.12]"
+                              : "border-slate-200/90"
                           )}
                         >
                           <div>
-                            {/* Card Header: Tag & Running Indicator */}
-                            <div className="flex items-center justify-between gap-2 mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="px-2.5 py-0.5 rounded-lg font-mono font-bold text-xs bg-slate-900 text-white">
-                                  {pump.code}
-                                </span>
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "font-mono font-bold text-[10px] px-2 py-0.5 border-0 inline-flex items-center gap-1.5",
-                                    isRunning
-                                      ? "bg-emerald-50 text-emerald-700"
-                                      : pump.status === 'FAULT'
-                                      ? "bg-rose-50 text-rose-700"
-                                      : "bg-slate-100 text-slate-700"
-                                  )}
-                                >
-                                  <span
-                                    className={cn(
-                                      "w-1.5 h-1.5 rounded-full",
-                                      isRunning
-                                        ? "bg-emerald-500 led-pulse-emerald"
-                                        : pump.status === 'FAULT'
-                                        ? "bg-rose-500 led-pulse-rose"
-                                        : "bg-slate-400"
-                                    )}
-                                  />
-                                  {pump.status}
-                                </Badge>
-                              </div>
-
-                              <span className="text-[11px] font-mono text-slate-400 font-semibold">
-                                MTR-{motorIdx + 1}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="px-2 py-0.5 rounded font-mono font-bold text-xs bg-slate-900 text-white">
+                                {pump.code}
                               </span>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "font-mono font-bold text-[10px] px-2 py-0.5 border-0 inline-flex items-center gap-1.5",
+                                  isRunning
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : "bg-slate-100 text-slate-700"
+                                )}
+                              >
+                                <span
+                                  className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    isRunning ? "bg-emerald-600" : "bg-slate-400"
+                                  )}
+                                />
+                                {isRunning ? 'AKTIF' : 'STANDBY'}
+                              </Badge>
                             </div>
 
-                            {/* Pump Name */}
-                            <h4 className="font-heading font-bold text-sm text-slate-900 mb-3 truncate" title={pump.name}>
+                            <h4 className="font-heading font-bold text-sm text-slate-900 mb-2 truncate">
                               {pump.name}
                             </h4>
 
-                            {/* Turbine / Impeller Visual Chamber */}
-                            <div className="p-3.5 rounded-xl bg-slate-50 mb-3.5 flex items-center justify-between shadow-2xs">
-                              <div className="flex items-center gap-3">
-                                {/* Rotating Impeller Turbine */}
+                            {/* Turbin Visual di Detail Room */}
+                            <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/70 mb-3 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
                                 <div
                                   className={cn(
-                                    "w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-500",
-                                    isRunning
-                                      ? "bg-[#00799e] text-white shadow-sm shadow-[#00799e]/30"
-                                      : "bg-slate-200 text-slate-400"
+                                    "w-7 h-7 rounded-lg flex items-center justify-center transition-all",
+                                    isRunning ? "bg-[#00799e] text-white" : "bg-slate-200 text-slate-400"
                                   )}
                                 >
-                                  <Fan
-                                    className={cn(
-                                      "w-6 h-6",
-                                      isRunning ? "animate-spin [animation-duration:0.8s]" : ""
-                                    )}
-                                  />
+                                  <Fan className={cn("w-3.5 h-3.5", isRunning ? "animate-spin [animation-duration:1.1s]" : "")} />
                                 </div>
-
-                                <div>
-                                  <span className="block text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                                    MOTOR SPEED
-                                  </span>
-                                  <span className="font-mono font-bold text-xs sm:text-sm text-slate-900 block">
-                                    {isRunning ? '1,450 RPM' : '0 RPM'}
-                                  </span>
-                                  <span className="text-[10px] text-slate-500 font-mono">
-                                    FREQ: {isRunning ? '50.0 Hz' : '0.0 Hz'}
-                                  </span>
-                                </div>
+                                <span className="font-mono text-xs font-semibold text-slate-800">
+                                  {isRunning ? '1,450 RPM' : '0 RPM'}
+                                </span>
                               </div>
-
-                              {/* Mini Status Indicator */}
-                              {isRunning ? (
-                                <Badge variant="outline" className="flex items-center gap-1 text-emerald-700 font-mono text-xs font-bold px-2.5 py-1 bg-emerald-50 border-0">
-                                  <span>ONLINE</span>
-                                  <ArrowRight className="w-3 h-3 animate-pulse" />
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-[10px] text-slate-500 font-mono px-2.5 py-1 bg-slate-100 border-0">
-                                  STANDBY
-                                </Badge>
-                              )}
+                              <span className="font-mono text-[10px] text-slate-500">
+                                {isRunning ? '50.0 Hz' : '0.0 Hz'}
+                              </span>
                             </div>
 
-                            {/* Telemetry Metrics 4-Grid with Monospace Readouts */}
-                            <div className="grid grid-cols-2 gap-2 text-xs mb-3 font-mono">
-                              <div className="p-2.5 rounded-xl bg-slate-50 flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-[#00799e]/10 text-[#00799e] flex items-center justify-center shrink-0">
-                                  <Gauge className="w-3.5 h-3.5" />
-                                </div>
+                            {/* Telemetry Metrics 4-Grid */}
+                            <div className="grid grid-cols-2 gap-1.5 text-xs mb-3 font-mono">
+                              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                                <Gauge className="w-3.5 h-3.5 text-[#00799e] shrink-0" />
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] text-slate-400 font-sans font-medium leading-none">Pressure</span>
+                                  <span className="block text-[9px] text-slate-400 font-sans leading-none">Tekanan</span>
                                   <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
                                     {pump.metrics?.pressure_bar ? pump.metrics.pressure_bar.toFixed(2) : '0.00'} bar
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="p-2.5 rounded-xl bg-slate-50 flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
-                                  <Droplets className="w-3.5 h-3.5" />
-                                </div>
+                              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                                <Droplets className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] text-slate-400 font-sans font-medium leading-none">Flow Rate</span>
+                                  <span className="block text-[9px] text-slate-400 font-sans leading-none">Debit</span>
                                   <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
                                     {pump.metrics?.flow_m3h ? pump.metrics.flow_m3h.toFixed(1) : '0.0'} m³/h
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="p-2.5 rounded-xl bg-slate-50 flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                                  <Zap className="w-3.5 h-3.5" />
-                                </div>
+                              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                                <Zap className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] text-slate-400 font-sans font-medium leading-none">Power</span>
+                                  <span className="block text-[9px] text-slate-400 font-sans leading-none">Daya</span>
                                   <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
                                     {pump.metrics?.power_kw ? pump.metrics.power_kw.toFixed(1) : '0.0'} kW
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="p-2.5 rounded-xl bg-slate-50 flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                                  <Thermometer className="w-3.5 h-3.5" />
-                                </div>
+                              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/60 flex items-center gap-2">
+                                <Thermometer className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                                 <div className="min-w-0">
-                                  <span className="block text-[10px] text-slate-400 font-sans font-medium leading-none">Temp</span>
+                                  <span className="block text-[9px] text-slate-400 font-sans leading-none">Suhu</span>
                                   <span className="font-bold text-slate-900 text-xs truncate block mt-0.5">
                                     {pump.metrics?.motor_temp_c ? pump.metrics.motor_temp_c.toFixed(1) : '25.0'} °C
                                   </span>
@@ -605,23 +1041,22 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                             </div>
                           </div>
 
-                          {/* Interactive Switch Control with Tactile Styling */}
-                          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                          <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
                             <span className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 font-mono">
                               <Power
                                 className={cn("w-3.5 h-3.5", isRunning ? 'text-emerald-600' : 'text-slate-400')}
                               />
-                              MOTOR CONTROL
+                              KONTROL MOTOR
                             </span>
 
                             <div className="flex items-center gap-2">
-                              <span className={cn("text-[10px] font-mono font-semibold", isRunning ? "text-emerald-600" : "text-slate-400")}>
-                                {isRunning ? "ACTIVE" : "STANDBY"}
+                              <span className={cn("text-[10px] font-mono font-bold", isRunning ? "text-emerald-700" : "text-slate-400")}>
+                                {isRunning ? "ON" : "OFF"}
                               </span>
                               <Switch
                                 checked={isRunning}
                                 onCheckedChange={() => onToggleMotor(pump.id)}
-                                aria-label={`Toggle motor ${pump.name}`}
+                                aria-label={`Sakelar motor ${pump.name}`}
                               />
                             </div>
                           </div>
@@ -632,15 +1067,20 @@ export const DashboardMonitoringView: React.FC<DashboardMonitoringViewProps> = (
                 )}
               </div>
             </div>
-          </div>
-      ) : null}
+          )}
+        </div>
+      )}
 
-      {/* 4. Real-Time Telemetry Line Chart & Pump Load Bar Chart */}
+      {/* ========================================================================= */}
+      {/* 4. REAL-TIME TELEMETRY LINE CHART & PUMP LOAD BAR CHART                  */}
+      {/* ========================================================================= */}
       {currentRoom && (
         <PumpPerformanceCharts currentRoom={currentRoom} allRooms={rooms} />
       )}
 
-      {/* 5. Historical Performance Analytics Line Chart */}
+      {/* ========================================================================= */}
+      {/* 5. HISTORICAL PERFORMANCE ANALYTICS LINE CHART                            */}
+      {/* ========================================================================= */}
       <HistoricalPerformanceChart currentRoom={currentRoom} allRooms={rooms} />
     </div>
   )
