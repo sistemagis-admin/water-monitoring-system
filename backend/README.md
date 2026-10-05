@@ -28,6 +28,7 @@ Backend service untuk **Smart Water Pump Monitoring System (SWPMS)** PT Ascon Mu
 - 🔒 **Authentication & RBAC**:
   - JWT Bearer Authentication dengan bcrypt password hashing.
   - Role-Based Access Control matrix (Super Admin, Engineer, Operator, Viewer).
+  - Pasangan Access Token (TTL 7 hari) dan Refresh Token (TTL 30 hari) via endpoint `POST /api/v1/auth/refresh` untuk menjaga sesi pemantauan tetap aktif stabil.
 - 📊 **Streaming CSV Reports & Audit Logs**:
   - Export data time-series dan riwayat alarm secara streaming tanpa lonjakan memori.
 
